@@ -21,5 +21,9 @@ class TestHelpers(unittest.TestCase):
         response = to_safe_print(b"\x80abc")
         self.assertEqual(response, "\\x80abc")
 
+    def test_safe_filename(self):
+        response = to_safe_filename(u"hellö#my~baby")
+        self.assertEqual(response, "hellmybaby")
+
 if __name__ == '__main__':
     unittest.main()

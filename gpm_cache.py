@@ -1,7 +1,5 @@
 """
 Cache information about a GPM playlist using gmusicapi.
-
-
 """
 
 from __future__ import absolute_import
@@ -10,6 +8,7 @@ import re
 import time
 import logging
 from pprint import pformat
+from builtins import str #pylint: disable=redefined-builtin
 
 import requests
 from argparse import ArgumentParser
@@ -52,6 +51,12 @@ def get_parser_args():
         required=True
     )
 
+    parser.add_argument(
+        '--sleep-time',
+        help="Time to sleep in between requests",
+        default=10
+    )
+
     # TODO: implement playlist-cached
 
     parser.add_argument(
@@ -69,11 +74,13 @@ def get_parser_args():
 
     return parser_args
 
-
-
 def to_safe_print(thing):
     """Take a stringable object of any type, returns a safe ASCII str."""
-    return str(thing).encode('ascii', errors='backslashreplace')
+    if isinstance(thing, bytes):
+        thing = thing.decode('ascii', errors='backslashreplace')
+    else:
+        thing = str(thing)
+    return thing.encode('ascii', errors='backslashreplace')
 
 def to_safe_filename(thing):
     """Take a stringable object and return an ASCII string safe for filenames."""
@@ -160,7 +167,7 @@ def cache_track(api, parser_args, track_id, track_info=None):
     save_meta(local_filepath, track_info)
 
     logging.info("taking a nap")
-    time.sleep(10)
+    time.sleep(parser_args.sleep_time)
 
     return local_filepath
 

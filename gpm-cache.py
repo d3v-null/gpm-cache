@@ -1,22 +1,24 @@
-import sys
+"""
+Cache information about a GPM playlist using gmusicapi.
+
+
+"""
+
+from __future__ import absolute_import
 import os
 import re
 import time
-from gmusicapi import Mobileclient
-from pprint import pprint
+import logging
+from pprint import pformat
+
 import requests
 from argparse import ArgumentParser
+from gmusicapi import Mobileclient
 
 import mutagen
 from mutagen.easyid3 import EasyID3
 
-import logging
-
-# pprint(EasyID3.valid_keys.keys())
-
-api = Mobileclient()
-
-debug_levels = {
+DEBUG_LEVELS = {
     'debug':logging.DEBUG,
     'info':logging.INFO,
     'warning':logging.WARNING,
@@ -24,114 +26,61 @@ debug_levels = {
     'critical':logging.CRITICAL
 }
 
-parser = ArgumentParser(description="cache information about a playlist from Google Play Music")
-parser.add_argument(
-    '--email',
-    help="The Google Authentication email",
-    required=True
-)
-parser.add_argument(
-    '--pwd',
-    help="The Google Authentication password",
-    required=True
-)
-parser.add_argument(
-    '--playlist',
-    help="The name of the GPM playlist to cache info from",
-    required=True
-)
-parser.add_argument(
-    '--cache-location',
-    help="The location in the filesystem to store cached information",
-    default=os.path.join(os.path.expanduser("~"), "gpm-cache")
-)
-parser.add_argument(
-    '--debug-level',
-    help="The level above which debug statements are printed",
-    choices=debug_levels.keys()
-)
+FILENAME_KEEP_CHARS = (' ', '.', '_')
 
-parser_args = parser.parse_args()
+# pprint(EasyID3.valid_keys.keys())
+def get_parser_args():
+    """Parse arguments from cli, env and config files."""
 
-logging_args = {
-    'format':'%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-    'datefmt':'%m-%d %H:%M'
-}
-if parser_args.debug_level:
-    logging_args['level'] = debug_levels[parser_args.debug_level]
-
-logging.basicConfig(**logging_args)
-
-for item, value in vars(parser_args).items():
-    logging.info("Parser arg: %15s = %s", item, value)
-
-logging.info("logging in to api")
-response = api.login(parser_args.email, parser_args.pwd, Mobileclient.FROM_MAC_ADDRESS)
-if response:
-    logging.info("api response: %s", response)
-else:
-    logging.info("no api response")
-# => True
-
-def to_safe_print(thing):
-    return unicode(thing).encode('ascii', errors='backslashreplace')
-
-filenameKeepCharacters = (' ','.','_')
-def to_safe_filename(thing):
-    return "".join(c for c in unicode(thing) if c.isalnum() or c in filenameKeepCharacters).rstrip()
-
-def cache_track(track_id, track_info={}):
-    track_artist = track_info.get('artist')
-    track_album = track_info.get('album')
-    track_album_artist = track_info.get('albumArtist')
-    track_composer = track_info.get('composer')
-    track_disc_number = track_info.get('discNumber')
-    track_genre = track_info.get('genre')
-    track_title = track_info.get('title')
-    track_number = track_info.get('trackNumber')
-    track_year = track_info.get('year')
-
-    try:
-        filing_artist = filter(None, [track_album_artist, track_artist, track_composer])[0]
-    except:
-        filing_artist = "Unknown Artist"
-
-    filing_album = track_album if track_album else "Unkown Album"
-    filing_title = track_title if track_title else track_id
-
-    local_filename = "%s.mp3" % to_safe_filename(filing_title)
-    if track_number is not None:
-        local_filename = "%02d - %s" % (track_number, local_filename)
-    if track_disc_number is not None and track_number is not None:
-        local_filename = "%02d:%s" % (track_disc_number, local_filename)
-    local_dir = os.path.join(filing_artist, filing_album)
-    local_dir = os.path.join(parser_args.cache_location, local_dir)
-    local_filepath = os.path.join(local_dir, local_filename)
-
-    logging.info( "caching song: id %s; artist %s; album %s; title %s; path %s",
-        to_safe_print(track_id),
-        to_safe_print(filing_artist),
-        to_safe_print(filing_album),
-        to_safe_print(filing_title),
-        to_safe_print(local_filepath)
+    parser = ArgumentParser(
+        description="cache information about a playlist from Google Play Music",
+        fromfile_prefix_chars="@"
+    )
+    parser.add_argument(
+        '--email',
+        help="The Google Authentication email",
+        required=True
+    )
+    parser.add_argument(
+        '--pwd',
+        help="The Google Authentication password",
+        required=True
+    )
+    parser.add_argument(
+        '--playlist',
+        help="The name of the GPM playlist to cache info from",
+        required=True
     )
 
-    cache_url = api.get_stream_url(track_id)
-    logging.info( "cache_url: %s" % to_safe_print(cache_url))
+    # TODO: implement playlist-cached
 
-    r = requests.get(cache_url, stream=True)
+    parser.add_argument(
+        '--cache-location',
+        help="The location in the filesystem to store cached information",
+        default=os.path.join(os.path.expanduser("~"), "gpm-cache")
+    )
+    parser.add_argument(
+        '--debug-level',
+        help="The level above which debug statements are printed",
+        choices=list(DEBUG_LEVELS.keys())
+    )
 
-    if not os.path.exists(local_dir):
-        os.makedirs(local_dir)
+    parser_args = parser.parse_args()
 
-    with open(local_filepath, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024):
-            if chunk: # filter out keep-alive new chunks
-                logging.info( "writing chunk")
-                f.write(chunk)
-                #f.flush() commented by recommendation from J.F.Sebastian
+    return parser_args
 
-        f.flush()
+
+
+def to_safe_print(thing):
+    """Take a stringable object of any type, returns a safe ASCII str."""
+    return str(thing).encode('ascii', errors='backslashreplace')
+
+def to_safe_filename(thing):
+    """Take a stringable object and return an ASCII string safe for filenames."""
+    return "".join(c for c in str(thing) if c.isalnum() or c in FILENAME_KEEP_CHARS).rstrip()
+
+def save_meta(local_filepath, track_info):
+    """Save meta associated with track to the given file."""
 
     try:
         meta = EasyID3(local_filepath)
@@ -139,45 +88,154 @@ def cache_track(track_id, track_info={}):
         meta = mutagen.File(local_filepath, easy=True)
         meta.add_tags()
 
-    if track_artist is not None:
-        meta['artist'] = track_artist
-    if track_album_artist is not None:
-        meta['albumartist'] = track_album_artist
-    if track_title is not None:
-        meta['title'] = track_title
-    if track_album is not None:
-        meta['album'] = track_album
-    if track_genre is not None:
-        meta['genre'] = track_genre
-    # if track_number is not None:
-    #     meta['tracknumber'] = track_number
-    # if track_disc_number is not None:
-    #     meta['discnumber'] = track_disc_number
+    for meta_key, info_key in [
+            ('artist', 'artist'),
+            ('albumartist', 'albumArtist'),
+            ('title', 'title'),
+            ('album', 'album'),
+            ('genre', 'genre')
+    ]:
+        if track_info.get(info_key) is not None:
+            meta[meta_key] = track_info.get(info_key)
+
+    # if track_info.get('trackNumber') is not None:
+    #     meta['tracknumber'] = track_info.get('trackNumber')
+    # if track_info.get('discNumber') is not None:
+    #     meta['discnumber'] = track_info.get('discNumber')
     # TODO: meta['date']
     meta.save()
+
+def cache_track(api, parser_args, track_id, track_info=None):
+    """
+    Cache a single track from the API.
+    """
+
+    if not track_info:
+        track_info = {}
+
+    filing_artists = \
+        [
+            track_info.get(key) for key in \
+            ['albumArtist', 'artist', 'composer'] \
+            if track_info.get(key)
+        ]
+    filing_artist = filing_artists[0] if filing_artists else "Unknown Artist"
+    filing_album = track_info.get('album') if track_info.get('album') else "Unkown Album"
+    filing_title = track_info.get('title') if track_info.get('title') else track_id
+
+    local_filepath = "%s.mp3" % to_safe_filename(filing_title)
+    if track_info.get('trackNumber') is not None:
+        local_filepath = "%02d - %s" % (track_info.get('trackNumber'), local_filepath)
+    if track_info.get('discNumber') is not None and track_info.get('trackNumber') is not None:
+        local_filepath = "%02d:%s" % (track_info.get('discNumber'), local_filepath)
+    local_dir = os.path.join(filing_artist, filing_album)
+    local_dir = os.path.join(parser_args.cache_location, local_dir)
+    local_dir = os.path.expanduser(local_dir)
+    local_filepath = os.path.join(local_dir, local_filepath)
+
+    logging.info(
+        "caching song: id %s; artist %s; album %s; title %s; path %s",
+        to_safe_print(track_id),
+        to_safe_print(filing_artist),
+        to_safe_print(filing_album),
+        to_safe_print(filing_title),
+        to_safe_print(local_filepath)
+    )
+
+    if not os.path.exists(local_dir):
+        os.makedirs(local_dir)
+
+    cache_url = api.get_stream_url(track_id)
+    logging.info("cache_url: %s", to_safe_print(cache_url))
+
+    req = requests.get(cache_url, stream=True)
+
+    with open(local_filepath, 'wb') as loc_file:
+        for chunk in req.iter_content(chunk_size=1024):
+            if chunk: # filter out keep-alive new chunks
+                loc_file.write(chunk)
+        logging.info("wrote file %s", loc_file.name)
+        loc_file.flush()
+
+    save_meta(local_filepath, track_info)
 
     logging.info("taking a nap")
     time.sleep(10)
 
     return local_filepath
 
-def cache_playlist(playlist_name):
+def cache_playlist(api, parser_args):
+    """
+    Cache an entire playlist from the API.
+    """
     library = api.get_all_user_playlist_contents()
 
     target_playlist = None
 
     for playlist in library:
-        logging.info( 'found %s %s', to_safe_print(playlist['name']), to_safe_print(playlist['id']))
-        if re.match(playlist_name, playlist['name'], re.I):
+        logging.info('found %s %s', to_safe_print(playlist['name']), to_safe_print(playlist['id']))
+        if re.match(parser_args.playlist, playlist['name'], re.I):
+            logging.info("playlist matched",)
             target_playlist = playlist
+            break
+        else:
+            logging.info(
+                "playlist (%s) did not match %s",
+                repr(playlist['name']),
+                repr(parser_args.playlist)
+            )
 
     if target_playlist:
-        logging.info("found target playlist %s", pprint(target_playlist))
+        logging.info("found target playlist %s", pformat(target_playlist))
 
         for track in target_playlist['tracks']:
             track_id = track['trackId']
-            track_info = track['track']
-            filename = cache_track(track_id, track_info)
-            print "succesfully cacheed to", to_safe_print(filename)
+            track_info = track.get('track')
+            filename = cache_track(api, parser_args, track_id, track_info)
+            logging.info("succesfully cacheed to %s", to_safe_print(filename))
+    else:
+        logging.warning("no playlist matched search string: %s", repr(parser_args.playlist))
 
-cache_playlist(parser_args.playlist)
+#
+def main():
+    """
+    Parse arguments, set up debugging and cache metadata.
+    """
+    api = Mobileclient()
+
+    parser_args = get_parser_args()
+
+    logging_args = {
+        'format':'%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+        'datefmt':'%m-%d %H:%M'
+    }
+    if parser_args.debug_level:
+        logging_args['level'] = DEBUG_LEVELS[parser_args.debug_level]
+
+    logging.basicConfig(**logging_args)
+
+    for item, value in list(vars(parser_args).items()):
+        logging.info("Parser arg: %15s = %s", item, value)
+
+    logging.info("logging in to api")
+
+    logging.info(
+        'types of email and pwd: %s, %s',
+        type(parser_args.email),
+        type(parser_args.pwd)
+    )
+
+    response = api.login(
+        parser_args.email,
+        parser_args.pwd,
+        Mobileclient.FROM_MAC_ADDRESS
+    )
+    if response:
+        logging.info("api response: %s", response)
+    else:
+        logging.info("no api response")
+
+    cache_playlist(api, parser_args)
+
+if __name__ == '__main__':
+    main()

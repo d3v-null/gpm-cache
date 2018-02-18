@@ -278,7 +278,7 @@ def cache_playlist(api, parser_args):
         if failed_tracks:
             logging.warning("tracks that failed")
             for track in failed_tracks:
-                logging.warning("-> %s %s", track['trackID'], track['track'])
+                logging.warning("-> %s %s", track.get('trackID'), track.get('track'))
     else:
         logging.warning("no playlist matched search string: %s", repr(parser_args.playlist))
 

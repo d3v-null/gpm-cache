@@ -12,6 +12,7 @@ from builtins import str #pylint: disable=redefined-builtin
 
 import requests
 from argparse import ArgumentParser
+import gmusicapi
 from gmusicapi import Mobileclient
 
 import mutagen
@@ -122,6 +123,11 @@ def get_parser_args():
         required=True
     )
     parser.add_argument(
+        '--device-id',
+        help="The Device ID used to log in (Use a GSF ID that has already been registered with GPM)",
+        required=True
+    )
+    parser.add_argument(
         '--playlist',
         help="The name of the GPM playlist to cache info from",
         required=True
@@ -165,7 +171,6 @@ def to_safe_filename(thing):
 
 def save_meta(local_filepath, track_info=None):
     """Save meta associated with track to the given file."""
-
     try:
         meta = EasyID3(local_filepath)
     except mutagen.id3.ID3NoHeaderError:
@@ -243,6 +248,7 @@ def cache_playlist(api, parser_args):
     """
     Cache an entire playlist from the API.
     """
+
     library = api.get_all_user_playlist_contents()
 
     target_playlist = None
@@ -271,9 +277,12 @@ def cache_playlist(api, parser_args):
             try:
                 filename = cache_track(api, parser_args, track_id, track_info)
                 logging.info("succesfully cacheed to %s", to_safe_print(filename))
-            except mutagen.mp3.HeaderNotFoundError:
+            except gmusicapi.exceptions.CallFailure:
+                logging.info("failed to get streaming url, try updating your device id: https://github.com/simon-weber/gmusicapi/issues/590")
+                exit()
+            except Exception as exc:
                 failed_tracks.append(track)
-                logging.info("\n\n!!! failed to cache track, %s. info: %s", track_id, track_info)
+                logging.info("\n\n!!! failed to cache track, %s. info: %s, exception: %s", track_id, track_info, exc)
 
         if failed_tracks:
             logging.warning("tracks that failed")
@@ -314,7 +323,7 @@ def main():
     response = api.login(
         parser_args.email,
         parser_args.pwd,
-        Mobileclient.FROM_MAC_ADDRESS
+        parser_args.device_id
     )
     if response:
         logging.info("api response: %s", response)

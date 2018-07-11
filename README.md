@@ -9,21 +9,24 @@ of your Google Play account, you might get in to trouble and that would be bad! 
 Installation
 ====
 
-Install requirements
+Install from GitHub
 
-`sudo -H pip install -r requirements.txt`
+```sh
+sudo -H pip install -r requirements.txt
+python setup.py install develop
+```
 
 Usage
 ====
 
-`
-python gpm_cache.py \
+```
+gpm_cache \
   --email={your google email} \
   --pwd={your google pass} \
   --playlist={your GPM playlist} \
   --playlist-cached={playlist to move successfully cached items}
   --rate-limit={rate limit (requests per sec)}
-`
+```
 
 Or, to save yourself typing these arguments multiple times, you can write a config
 file e.g. `gpm_args.txt` like this:

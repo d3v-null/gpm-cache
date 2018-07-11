@@ -16,7 +16,7 @@ class TestHelpers(unittest.TestCase):
         response = to_safe_print(u"hëllo")
         self.assertEqual(response, "h\\xebllo")
         for char in list(response):
-            self.assertLessEqual(char, 128)
+            self.assertLessEqual(ord(char), 128)
 
         response = to_safe_print(b"\x80abc")
         self.assertEqual(response, "\\x80abc")

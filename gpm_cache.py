@@ -3,20 +3,23 @@ Cache information about a GPM playlist using gmusicapi.
 """
 
 from __future__ import absolute_import
+
+import logging
 import os
 import re
 import time
-import logging
+from argparse import ArgumentParser
+from builtins import str  # pylint: disable=redefined-builtin
+from getpass import getpass
 from pprint import pformat
-from builtins import str #pylint: disable=redefined-builtin
 
 import requests
-from argparse import ArgumentParser
-import gmusicapi
-from gmusicapi import Mobileclient
 
+import gmusicapi
 import mutagen
+from gmusicapi import Mobileclient
 from mutagen.easyid3 import EasyID3
+from six import binary_type, byte2int, text_type
 
 DEBUG_LEVELS = {
     'debug':logging.DEBUG,
@@ -41,31 +44,16 @@ class TrackInfo(object):
     def id3_meta(self):
         """Return the id3 tags for this object."""
 
-        # possible keys:  'albumartistsort', 'musicbrainz_albumstatus',
-        # 'lyricist', 'musicbrainz_workid', 'releasecountry', 'date',
-        # 'albumartist', 'musicbrainz_albumartistid', 'composer', 'catalognumber',
-        # 'encodedby', 'tracknumber', 'musicbrainz_albumid', 'album', 'asin',
-        # 'musicbrainz_artistid', 'mood', 'copyright', 'author', 'media',
-        # 'performer', 'length', 'acoustid_fingerprint', 'version', 'artistsort',
-        # 'titlesort', 'discsubtitle', 'website', 'musicip_fingerprint',
-        # 'conductor', 'musicbrainz_releasegroupid', 'compilation', 'barcode',
-        # 'performer:*', 'composersort', 'musicbrainz_discid',
-        # 'musicbrainz_albumtype', 'genre', 'isrc', 'discnumber',
-        # 'musicbrainz_trmid', 'acoustid_id', 'replaygain_*_gain', 'musicip_puid',
-        # 'originaldate', 'language', 'artist', 'title', 'bpm',
-        # 'musicbrainz_trackid', 'arranger', 'albumsort', 'replaygain_*_peak',
-        # 'organization', 'musicbrainz_releasetrackid'
-
         response = {}
         for meta_key, info_key, mapping_fn in [
-                ('artist', 'artist', str),
-                ('albumartist', 'albumArtist', str),
-                ('title', 'title', str),
-                ('album', 'album', str),
-                ('genre', 'genre', str),
-                ('tracknumber', 'trackNumber', str),
-                ('discnumber', 'discNumber', str),
-                ('date', 'year', str),
+                ('artist', 'artist', text_type),
+                ('albumartist', 'albumArtist', text_type),
+                ('title', 'title', text_type),
+                ('album', 'album', text_type),
+                ('genre', 'genre', text_type),
+                ('tracknumber', 'trackNumber', text_type),
+                ('discnumber', 'discNumber', text_type),
+                ('date', 'year', text_type),
 
         ]:
             if self.track_info.get(info_key) is not None:
@@ -120,7 +108,6 @@ def get_parser_args():
     parser.add_argument(
         '--pwd',
         help="The Google Authentication password",
-        required=True
     )
     parser.add_argument(
         '--device-id',
@@ -157,17 +144,24 @@ def get_parser_args():
 
     return parser_args
 
-def to_safe_print(thing):
-    """Take a stringable object of any type, returns a safe ASCII str."""
-    if isinstance(thing, bytes):
-        thing = thing.decode('ascii', errors='backslashreplace')
+def to_safe_print(thing, errors='backslashreplace'):
+    """Take a stringable object of any type, returns a safe ASCII byte str."""
+    if isinstance(thing, binary_type):
+        thing = text_type("".join([
+            (c if (byte2int(c) in range(0x7f)) else "\\x%02x" % byte2int(c)) for c in thing
+        ]))
+        # thing = thing.decode('ascii', errors=errors)
     else:
-        thing = str(thing)
-    return thing.encode('ascii', errors='backslashreplace')
+        thing = text_type(thing)
+    return thing.encode('ascii', errors=errors)
 
 def to_safe_filename(thing):
     """Take a stringable object and return an ASCII string safe for filenames."""
-    return "".join(c for c in str(thing) if c.isalnum() or c in FILENAME_KEEP_CHARS).rstrip()
+    thing = to_safe_print(thing, errors='ignore')
+    re_keep_characters = "[%s]" % ("A-Za-z0-9" + re.escape("".join(FILENAME_KEEP_CHARS)))
+    return "".join(
+        c for c in thing if re.match(re_keep_characters, c)
+    ).rstrip()
 
 def save_meta(local_filepath, track_info=None):
     """Save meta associated with track to the given file."""
@@ -222,6 +216,8 @@ def cache_track(api, parser_args, track_id, track_info=None):
     """
 
     info_obj = TrackInfo(track_id, track_info)
+
+    print("TODO: add extra meta here like 'cached by gpm-cache'")
 
     cache_url = api.get_stream_url(track_id)
     logging.info("cache_url: %s", to_safe_print(cache_url))
@@ -312,13 +308,11 @@ def main():
     for item, value in list(vars(parser_args).items()):
         logging.info("Parser arg: %15s = %s", item, value)
 
-    logging.info("logging in to api")
+    password = parser_args.pwd
+    if not password:
+        password = getpass(prompt="Enter your Google account password:")
 
-    logging.info(
-        'types of email and pwd: %s, %s',
-        type(parser_args.email),
-        type(parser_args.pwd)
-    )
+    logging.info("logging in to api")
 
     response = api.login(
         parser_args.email,

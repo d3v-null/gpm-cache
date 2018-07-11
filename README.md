@@ -16,6 +16,19 @@ sudo -H pip install -r requirements.txt
 python setup.py install develop
 ```
 
+Testing
+====
+
+Test in your environment
+```bash
+python setup.py test
+```
+
+Use tox to run tests on multiple python versions
+```bash
+tox
+```
+
 Usage
 ====
 
@@ -49,5 +62,4 @@ Roadmap
 ====
 
 - Fix only saving to local dir problem
-- Add parameter to throttle requests so that no one hits
 - implement playlist-cached parameter

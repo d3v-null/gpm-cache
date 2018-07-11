@@ -6,6 +6,7 @@ from __future__ import absolute_import
 
 import logging
 import os
+import sys
 import re
 import time
 from argparse import ArgumentParser
@@ -31,12 +32,17 @@ DEBUG_LEVELS = {
 
 FILENAME_KEEP_CHARS = (' ', '.', '_')
 
+class PlaylistNotFoundException(UserWarning):
+    pass
+
+class BadLoginException(UserWarning):
+    pass
+
 class TrackInfo(object):
     """Helper class stores information about a track."""
 
     def __init__(self, track_id, track_info):
-        if not track_info:
-            track_info = {}
+        track_info = track_info or {}
         self.track_id = track_id
         self.track_info = track_info
 
@@ -93,8 +99,9 @@ class TrackInfo(object):
 
 
 # pprint(EasyID3.valid_keys.keys())
-def get_parser_args():
+def get_parser_args(argv=None):
     """Parse arguments from cli, env and config files."""
+    argv = sys.argv if argv is None else argv
 
     parser = ArgumentParser(
         description="cache information about a playlist from Google Play Music",
@@ -140,7 +147,7 @@ def get_parser_args():
         choices=list(DEBUG_LEVELS.keys())
     )
 
-    parser_args = parser.parse_args()
+    parser_args = parser.parse_args(argv)
 
     return parser_args
 
@@ -286,16 +293,18 @@ def cache_playlist(api, parser_args):
             for track in failed_tracks:
                 logging.warning("-> %s %s", track.get('trackID'), track.get('track'))
     else:
-        logging.warning("no playlist matched search string: %s", repr(parser_args.playlist))
+        raise PlaylistNotFoundException(
+            "no playlist matched search string: %s", repr(parser_args.playlist)
+        )
 
 #
-def main():
+def main(argv=None):
     """
     Parse arguments, set up debugging and cache metadata.
     """
     api = Mobileclient()
 
-    parser_args = get_parser_args()
+    parser_args = get_parser_args(argv)
 
     logging_args = {
         'format':'%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
@@ -317,15 +326,15 @@ def main():
 
     response = api.login(
         parser_args.email,
-        parser_args.pwd,
+        password,
         parser_args.device_id
     )
     if response:
         logging.info("api response: %s", response)
+        cache_playlist(api, parser_args)
     else:
-        logging.info("no api response")
+        raise BadLoginException("Bad login. Check creds and internet")
 
-    cache_playlist(api, parser_args)
 
 if __name__ == '__main__':
     main()

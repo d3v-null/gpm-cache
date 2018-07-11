@@ -3,12 +3,46 @@
 Basic tests for gpm_cache.
 """
 
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
+import shlex
 import unittest
+import sys
 
-from gpm_cache import TrackInfo, to_safe_filename, to_safe_print
-from six import u, b
+import gpm_cache
+from gmusicapi import Mobileclient
+from gpm_cache import (PlaylistNotFoundException, BadLoginException, TrackInfo, to_safe_filename,
+                       to_safe_print)
+from six import MovedModule, add_move, b, u
+
+if True:
+    add_move(MovedModule('mock', 'mock', 'unittest.mock'))
+    from six.moves import mock
+
+    from mock import patch
+
+
+
+class TestMainMocked(unittest.TestCase):
+    dummy_argv = shlex.split(
+        "--email 'email' --pwd 'pass' --device-id 'devid' --playlist 'plist' "
+        "--debug-level 'critical'"
+    )
+
+    def test_bad_login(self):
+        with \
+            patch.object(Mobileclient, 'login', return_value=None), \
+            self.assertRaises(BadLoginException) \
+        :
+            gpm_cache.main(self.dummy_argv)
+
+    def test_good_login_bad_playlist_contents(self):
+        with \
+            patch.object(Mobileclient, 'login', return_value=True), \
+            patch.object(Mobileclient, 'get_all_user_playlist_contents', return_value=[]), \
+            self.assertRaises(PlaylistNotFoundException) \
+        :
+            gpm_cache.main(self.dummy_argv)
 
 
 class TestHelpers(unittest.TestCase):
@@ -25,6 +59,10 @@ class TestHelpers(unittest.TestCase):
 
         response = to_safe_print(b"\x80abc")
         self.assertEqual(response, "\\x80abc")
+
+        response = to_safe_print((b"\x80abc",u"\x80s"))
+        for char in list(response):
+            self.assertLessEqual(ord(char), 128)
 
     def test_safe_filename(self):
         response = to_safe_filename(u"hellö#my~baby")

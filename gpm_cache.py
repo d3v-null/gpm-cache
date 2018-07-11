@@ -19,7 +19,7 @@ import gmusicapi
 import mutagen
 from gmusicapi import Mobileclient
 from mutagen.easyid3 import EasyID3
-from six import binary_type, byte2int, text_type
+from six import binary_type, byte2int, text_type, iterbytes, u, b, unichr
 
 DEBUG_LEVELS = {
     'debug':logging.DEBUG,
@@ -147,13 +147,14 @@ def get_parser_args():
 def to_safe_print(thing, errors='backslashreplace'):
     """Take a stringable object of any type, returns a safe ASCII byte str."""
     if isinstance(thing, binary_type):
-        thing = text_type("".join([
-            (c if (byte2int(c) in range(0x7f)) else "\\x%02x" % byte2int(c)) for c in thing
-        ]))
+        thing = u"".join([
+            (unichr(c) if (c in range(0x7f)) else "\\x%02x" % (c,))\
+            for c in iterbytes(thing)
+        ])
         # thing = thing.decode('ascii', errors=errors)
-    else:
+    elif not isinstance(thing, text_type):
         thing = text_type(thing)
-    return thing.encode('ascii', errors=errors)
+    return thing.encode('ascii', errors=errors).decode('ascii')
 
 def to_safe_filename(thing):
     """Take a stringable object and return an ASCII string safe for filenames."""

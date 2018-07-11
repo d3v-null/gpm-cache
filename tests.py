@@ -3,8 +3,13 @@
 Basic tests for gpm_cache.
 """
 
+from __future__ import unicode_literals
+
 import unittest
-from gpm_cache import to_safe_print, to_safe_filename, TrackInfo
+
+from gpm_cache import TrackInfo, to_safe_filename, to_safe_print
+from six import u, b
+
 
 class TestHelpers(unittest.TestCase):
     """Test helper functions of gpm_cache."""

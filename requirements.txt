@@ -1,2 +1,4 @@
 gmusicapi
 mutagen
+future
+six

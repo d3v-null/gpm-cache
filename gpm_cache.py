@@ -101,7 +101,7 @@ class TrackInfo(object):
 # pprint(EasyID3.valid_keys.keys())
 def get_parser_args(argv=None):
     """Parse arguments from cli, env and config files."""
-    argv = sys.argv if argv is None else argv
+    argv = sys.argv[1:] if argv is None else argv
 
     parser = ArgumentParser(
         description="cache information about a playlist from Google Play Music",

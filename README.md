@@ -1,3 +1,51 @@
+```
+
+
+
+``
+`:++++/:.
+/ooooooo++/-`
++ooooooooooo++:.
++oooooooooooooo++/-`
++oooooooooooooooooo+/:.
+ooooooooooooooooooooo++/-..----------..```
+ooooooooooooooooo++/:----------------------.``
+ooooooooooooooo+::----------------------------.`
+oooooooooooo+/:----------------------------------.`
+ooooooooooo/:--------------------------------------.`
+ooooooooo+:-------------::://////////:::-------------`
+oooooooo+:-----------:://////////////////:------------.
+ooooooo+-----------:///////////////////////::----------.
+oooooo+:----------///////////////////////////:----------.
+oooooo:---------:///////////////`````-+///////:----------.
+ooooo+----------////////////////     .+////////:----------/:.`
+ooooo:---------://////////////// `////+/////////:---------+oo+/-`
+ooooo:---------///////////////// `+++///////////:---------/ooooo+-
+ooooo----------///////////////// `++/////////////---------/ooooooo`
+ooooo:---------////////////-```` `++////////////:-------/oooooo:
+ooooo:---------://////////`      `++////////////---------o.
+ooooo+----------//////////`      .++////////////--------`
+oooooo:---------://////////-```.-+/////////////------`
+oooooo+:---------:////////////////////////////----.`
+ooooooo+-----------:////////////////////////---.``
+oooooooo+:-----------:////////////////////---.`
+ooooooooo+:--------------:////////////----``
+ooooooooooo/:--------------------------.`
+ooooooooooooo/:------------------:--.`                       __
+ooooooooooooooo+/---------------.`          _________ ______/ /_  ___
+oooooooooooooooooo+/------:--.`            / ___/ __ `/ ___/ __ \/ _ \
+oooooooooooooooooooooo+/:.`               / /__/ /_/ / /__/ / / /  __/
+oooooooooooooooooooo+/-`                  \___/\__,_/\___/_/ /_/\___/
+ooooooooooooooooo+:.
+oooooooooooooo/-`
++ooooooooo+:.
+`+ooooo/-`
+`..`
+
+
+
+```
+
 gpm-cache
 ===
 An innocuous little script that caches information about a GPM playlist using
@@ -35,7 +83,8 @@ Usage
 ```
 gpm_cache \
   --email={your google email} \
-  --pwd={your google pass} \
+  --device-id 'XXXXXXXXXXXXXXXX' \
+  --cache-location '~/Music/gpm-download/' \
   --playlist={your GPM playlist} \
   --playlist-cached={playlist to move successfully cached items}
   --rate-limit={rate limit (requests per sec)}
@@ -56,10 +105,11 @@ file e.g. `gpm_args.txt` like this:
 
 and then you only have to type
 
-`python gpm_cache.py @gpm_args.txt --pwd <your password>`
+`gpm_cache @gpm_args.txt`
 
 Roadmap
 ====
 
-- Fix only saving to local dir problem
-- implement playlist-cached parameter
+- [x] Ask for creds every time
+- [ ] Fix only saving to local dir problem
+- [ ] implement playlist-cached parameter

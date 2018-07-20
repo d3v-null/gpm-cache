@@ -1,0 +1,21 @@
+env:
+    global:
+        # - CC_TEST_REPORTER_ID=
+language: python
+python:
+    - "2.7"
+    - "3.6"
+install:
+    - pip install -r requirements.txt
+    - pip install coverage
+    - python setup.py install
+before_script:
+    - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+    - chmod +x ./cc-test-reporter
+    - ./cc-test-reporter before-build
+script:
+    - coverage run setup.py test
+after_script:
+    - coverage report -m
+    - coverage xml
+    - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT --debug

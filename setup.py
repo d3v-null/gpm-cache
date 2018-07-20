@@ -158,11 +158,11 @@ setup(
     # projects.
     extras_require={  # Optional
         'dev': ['check-manifest'],
-        'test': ['coverage'],
+        'test': ['coverage', 'mock'],
     },
 
     setup_requires=["pytest-runner"],
-    tests_require=["pytest"],
+    tests_require=["pytest", 'coverage', 'mock', 'pytest-cov'],
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.

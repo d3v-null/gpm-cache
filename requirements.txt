@@ -1,4 +1,9 @@
+pytest==3.6.3
+six==1.11.0
 gmusicapi
 mutagen
 future
-six
+setuptools==39.0.1
+future
+mock
+pytest-cov

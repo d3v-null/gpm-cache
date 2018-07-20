@@ -9,10 +9,9 @@ import shlex
 import unittest
 import sys
 
-import gpm_cache
 from gmusicapi import Mobileclient
-from gpm_cache import (PlaylistNotFoundException, BadLoginException, TrackInfo, to_safe_filename,
-                       to_safe_print)
+from .core import (PlaylistNotFoundException, BadLoginException, TrackInfo, to_safe_filename,
+                       to_safe_print, main)
 from six import MovedModule, add_move, b, u
 
 if True:
@@ -34,7 +33,7 @@ class TestMainMocked(unittest.TestCase):
             patch.object(Mobileclient, 'login', return_value=None), \
             self.assertRaises(BadLoginException) \
         :
-            gpm_cache.main(self.dummy_argv)
+            main(self.dummy_argv)
 
     def test_good_login_bad_playlist_contents(self):
         with \
@@ -42,7 +41,7 @@ class TestMainMocked(unittest.TestCase):
             patch.object(Mobileclient, 'get_all_user_playlist_contents', return_value=[]), \
             self.assertRaises(PlaylistNotFoundException) \
         :
-            gpm_cache.main(self.dummy_argv)
+            main(self.dummy_argv)
 
 
 class TestHelpers(unittest.TestCase):

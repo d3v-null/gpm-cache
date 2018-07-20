@@ -189,7 +189,7 @@ setup(
     # executes the function `main` from this package when invoked:
     entry_points={  # Optional
         'console_scripts': [
-            '{0}={0}:main'.format(PKG_NAME),
+            '{0}={0}.core:main'.format(PKG_NAME),
         ],
     },
 

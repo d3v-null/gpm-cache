@@ -48,6 +48,11 @@ oooooooooooooo/-`
 
 gpm-cache
 ===
+[![Build Status](https://travis-ci.org/derwentx/gpm-cache.svg?branch=master)](https://travis-ci.org/derwentx/gpm-cache)
+[![Maintainability](https://api.codeclimate.com/v1/badges/f28cbc664d9193b330b3/maintainability)](https://codeclimate.com/github/derwentx/gpm-cache/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/f28cbc664d9193b330b3/test_coverage)](https://codeclimate.com/github/derwentx/gpm-cache/test_coverage)
+
+
 An innocuous little script that caches information about a GPM playlist using
 [gmusicapi](https://github.com/simon-weber/gmusicapi)
 

@@ -1,0 +1,3 @@
+[run]
+source = gpm_cache.py
+omit = tests.py

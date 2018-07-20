@@ -16,6 +16,6 @@ before_script:
 script:
     - coverage run setup.py test
 after_script:
-    - coverage report -m gpm_cache.py
+    - coverage report -m
     - coverage xml
     - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT --debug

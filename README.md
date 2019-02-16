@@ -55,8 +55,8 @@ Installation
 Install from GitHub
 
 ```sh
-sudo -H pip install -r requirements.txt
-python setup.py install develop
+pip install -r requirements.txt
+python setup.py develop
 ```
 
 Testing
@@ -76,7 +76,7 @@ Usage
 ====
 
 ```
-gpm_cache \
+python -m gpm_cache.core \
   --email={your google email} \
   --device-id 'XXXXXXXXXXXXXXXX' \
   --cache-location '~/Music/gpm-download/' \
@@ -88,19 +88,21 @@ gpm_cache \
 Or, to save yourself typing these arguments multiple times, you can write a config
 file e.g. `gpm_args.txt` like this:
 ```
-    --email
-    your@email.com
-    --playlist
-    Your Playlist Name
-    --cache-location
-    ~/your-cache-location/
-    --debug-level
-    info
+--email
+your@email.com
+--playlist
+Your Playlist Name
+--cache-location
+~/your-cache-location/
+--debug-level
+info
+--device-id
+ABC123
 ```
 
 and then you only have to type
 
-`gpm_cache @gpm_args.txt`
+`python -m gpm_cache.core @gpm_args.txt`
 
 Roadmap
 ====

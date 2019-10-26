@@ -20,7 +20,7 @@ from six import b, binary_type, iterbytes, text_type, u, unichr  # noqa: W0611
 from .sanitation_helper import to_safe_filename, to_safe_print
 from .library import Library
 from .track_info import TrackInfo
-from .exceptions import BadLoginException
+from .exceptions import BadLoginException, PlaylistNotFoundException
 
 DEBUG_LEVELS = {
     'debug': logging.DEBUG,
@@ -162,7 +162,13 @@ def cache_playlist(api, parser_args):
 
     cached_playlist = None
     if parser_args.playlist_cached:
-        cached_playlist = library.find_playlist(parser_args.playlist_cached)
+        try:
+            cached_playlist = library.find_playlist(parser_args.playlist_cached)
+        except PlaylistNotFoundException:
+            cached_playlist = {
+                'name': parser_args.playlist_cached,
+                'id': api.create_playlist(parser_args.playlist_cached)
+            }
 
     failed_tracks = []
 

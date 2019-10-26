@@ -5,3 +5,9 @@ fileignoreconfig:
 - filename: .travis.yml
   checksum: def4e60f0ac0571e28629d862fcbaa1f73cddc24ae30eaf01695601465000c28
   ignore_detectors: []
+- filename: tests/test_data/library.json
+  checksum: b008f42ba83aa3f1d331cec914744d184631d5c0cf031994902d81fa9dd77ae0
+  ignore_detectors: []
+- filename: tests/test_data/track_info.json
+  checksum: e47462d04d14cb55bb4a73029c86c93ac28f32c9c7682191e207f686dcdd73fc
+  ignore_detectors: []

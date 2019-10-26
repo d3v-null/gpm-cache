@@ -1,0 +1,48 @@
+{
+    "album": "Southpaw EP",
+    "albumArtRef": [
+        {
+            "aspectRatio": "1",
+            "autogen": false,
+            "kind": "sj#imageRef",
+            "url": "http://lh3.googleusercontent.com/JPIzh3RwQ8E3tuW9iiCd8SSA7xSDGwHeplgP2d903AmibiDpX5_zkPa2rDFsYheTkeyi_nA7lw"
+        }
+    ],
+    "albumArtist": "Moonbase Commander",
+    "albumAvailableForPurchase": false,
+    "albumId": "B52ucw7kgew7axvye5vldk6rxty",
+    "artist": "Moonbase Commander",
+    "artistArtRef": [
+        {
+            "aspectRatio": "2",
+            "autogen": true,
+            "kind": "sj#imageRef",
+            "url": "http://lh3.googleusercontent.com/Y7bfPNOK1Y2besTzlMMPq_IbMyxf0B3lP_nNfa41CCxaF0MyBYDknVxu6cZO-RrPEXVrrAJRyg"
+        },
+        {
+            "aspectRatio": "1",
+            "autogen": true,
+            "kind": "sj#imageRef",
+            "url": "http://lh3.googleusercontent.com/qa82ufTF4bZLbveox1RoR93yCwM60hbXO5NvUH91gjR8KLLSHCeNnxXbjU_TtQTYiFQyPA_voQ"
+        }
+    ],
+    "artistId": [
+        "Aefmiddcllvc6xda7wyj7w3r3yy"
+    ],
+    "composer": "",
+    "discNumber": 1,
+    "durationMillis": "213000",
+    "estimatedSize": "8557841",
+    "explicitType": "2",
+    "genre": "Dance/Electronic",
+    "kind": "sj#track",
+    "nid": "6zn3up2um24dxoggvac6obj7ay",
+    "playCount": 1,
+    "storeId": "T6zn3up2um24dxoggvac6obj7ay",
+    "title": "Southpaw",
+    "trackAvailableForPurchase": true,
+    "trackAvailableForSubscription": true,
+    "trackNumber": 1,
+    "trackType": "7",
+    "year": 2015
+}

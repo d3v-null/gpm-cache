@@ -108,5 +108,6 @@ Roadmap
 ====
 
 - [x] Ask for creds every time
+- [ ] [Get 2FA working](https://github.com/derwentx/gpm-cache/issues/1)
 - [ ] Fix only saving to local dir problem
 - [ ] implement playlist-cached parameter

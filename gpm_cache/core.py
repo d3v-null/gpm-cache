@@ -61,9 +61,14 @@ def get_parser_args(argv=None):
     parser.add_argument('--cache-location',
                         help="The location in the filesystem to store cached information",
                         default=os.path.join(os.path.expanduser("~"), "gpm-cache"))
+    parser.add_argument('--cache-heirarchy',
+                        help="The structure in which the output files are organised",
+                        choices=['artist_album', 'flat'],
+                        default='artist_album')
     parser.add_argument('--debug-level',
                         help="The level above which debug statements are printed",
-                        choices=list(DEBUG_LEVELS.keys()))
+                        choices=list(DEBUG_LEVELS.keys()),
+                        default='warning')
     parser.add_argument('--oauth-creds-file',
                         help=("location to store the oauth credentials file. "
                               "If not provided, a file will be created for you in "
@@ -93,7 +98,7 @@ def save_meta(local_filepath, track_info=None):
     meta.save()
 
 
-def get_local_filepath(cache_location, track_id, track_info=None):
+def get_local_filepath(cache_location, cache_heirarchy, track_info=None):
     """
     Determine the best location to save the track on disk.
 
@@ -101,17 +106,20 @@ def get_local_filepath(cache_location, track_id, track_info=None):
     """
 
     local_filepath = "%s.mp3" % to_safe_filename(track_info.filing_title)
-    local_dir = os.path.expanduser(
-        os.path.join(*[
-            cache_location,
-            to_safe_filename(track_info.filing_artist),
-            to_safe_filename(track_info.filing_album)
-        ]))
+    path_components = [
+        cache_location,
+    ]
+    if cache_heirarchy == 'artist_album':
+        path_components.extend(
+            [to_safe_filename(track_info.filing_artist),
+             to_safe_filename(track_info.filing_album)])
+
+    local_dir = os.path.expanduser(os.path.join(*path_components))
 
     local_filepath = os.path.join(local_dir, local_filepath)
 
     logging.info("caching song: id %s; artist %s; album %s; title %s; path %s",
-                 to_safe_print(track_id), to_safe_print(track_info.filing_artist),
+                 to_safe_print(track_info.track_id), to_safe_print(track_info.filing_artist),
                  to_safe_print(track_info.filing_album), to_safe_print(track_info.filing_title),
                  to_safe_print(local_filepath))
 
@@ -133,7 +141,8 @@ def cache_track(api, parser_args, track_id, track_info=None):
 
     req = requests.get(cache_url, stream=True)
 
-    local_filepath = get_local_filepath(parser_args.cache_location, track_id, info_obj)
+    local_filepath = get_local_filepath(parser_args.cache_location, parser_args.cache_heirarchy,
+                                        info_obj)
 
     with open(local_filepath, 'wb') as loc_file:
         for chunk in req.iter_content(chunk_size=1024):

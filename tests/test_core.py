@@ -17,7 +17,8 @@ from . import REPO_ROOT
 try:
     PATH = sys.path
     sys.path.insert(1, REPO_ROOT)
-    from gpm_cache.core import (BadLoginException, PlaylistNotFoundException, main)
+    from gpm_cache.core import main
+    from gpm_cache.exceptions import BadLoginException, PlaylistNotFoundException
 finally:
     sys.path = PATH
 

@@ -18,6 +18,7 @@ try:
     PATH = sys.path
     sys.path.insert(1, REPO_ROOT)
     from gpm_cache.api_helper import ApiHelper
+    from gpm_cache.exceptions import PlaylistNotFoundException
 finally:
     sys.path = PATH
 
@@ -35,8 +36,13 @@ class TestApiHelper(unittest.TestCase):
 
         self.api = Mobileclient()
 
-    @unittest.skip("not yet implemented")
-    def test_find_playist(self):
+    def test_find_existing_playist(self):
         with \
                 patch.object(Mobileclient, 'get_all_user_playlist_contents', return_value=self.library):
             self.assertTrue(ApiHelper.find_playlist(self.api, 'Fake Playlist'))
+
+    def test_not_find_nonexisting_playist(self):
+        with \
+                patch.object(Mobileclient, 'get_all_user_playlist_contents', return_value=self.library),\
+                self.assertRaises(PlaylistNotFoundException):
+            ApiHelper.find_playlist(self.api, 'Nonexistent Playlist')

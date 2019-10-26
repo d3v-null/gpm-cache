@@ -2,3 +2,6 @@ fileignoreconfig:
 - filename: gpm_cache/tests.py
   checksum: c2b20d29a877e41eedc3efba43da290eda4604803f03aca22933fb1112b71a55
   ignore_detectors: []
+- filename: .travis.yml
+  checksum: def4e60f0ac0571e28629d862fcbaa1f73cddc24ae30eaf01695601465000c28
+  ignore_detectors: []

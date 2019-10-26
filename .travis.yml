@@ -1,21 +1,23 @@
 env:
-    global:
-        - CC_TEST_REPORTER_ID=d0fce9b84647bb9d5ae2697330757a9bb2ed748045b3178ed63225d50cc33cb1
+  global:
+  - secure: fMuCuAZBhBdfaNjZJbQuYqtmN4HlRy+jqY9sahcZK1AweiOzBKznoMkg3Z8Yv7pyQmOiQitd9g6rPf0qBddkMuC37Kk3bgBEF4OLXH4V6/e2CJQEjQQOGhfXz4oLMeM9N51FZT3KzVWiE7EdtV6LdxUco9wTAZuibGR6MkrYdGaOzxgnnTmGg9wmcP/Q3De0GhvHQQNLESMLV0WE6xSFifYNme+KY3c8JYX/KMkKtfTlleJYUMwSTjh0tHZeTgZM3bxwrr+SmeH1fA8FYW+1oMgCTiECs6xYoemkI8sy/9g5TcQ3h0z+wrMnOnpP0FWRb2q7R487fCZuyt+KriDVUxo8W1g+yY+tV4pNWAfC3v50VQFdn1Aa6Pge64enLQ4aiq7gIWfWnvovUOWF46NddvXTDjELO5ENLshE+onq3EWybLxxqhCloYGRTcEDcKdrRNdPGlW3f8MMZ4KIEy7TUJTGOZr7H1lwGULcLRoXPqLp/Vcb+gaLYLQg5uklVe49thcZVP2Vy8R59rgD2dhumXBsYNrqa3Vjk07JXvb2C+Psgeg4oMVdJ7b52TB+XL2EsNu74EeMaNWvAWwbLL9O7TBNugMEKLxme+lkwPsyhYanjVlooVFdRVIFYag2zEOcciOQM91LvmCZiCWWzp5Cbap51WU2nKdsrGiqoepXFQw=
+  - secure: ucNHKruNbOH1Pb0VoEF7yBsiw+YL6D8o5+m1yXF+neWyAYEGxzZkNjqL72HyzOOMX1uj8AMxuHO7tAzr19CLltRuDRZK6BavC5/nc3NIp9+jGF1XGLZWVQQwvhUoQtSWyIJkHvc/KymVWZ1Q4jxASNYGDxuwjeDcRekNNAVRvF/EvS1qLxzHxUlIJVogFuGuRfLoE7KaIcD4wb1BhAchZgzOWM22lB77tIdBgdXkqK012pfsYPuJUg342YRolmVWa74d7tBBIj+sjoT9orbncg73l6V+2T2jhYcUBooooWeck+e4VuDNHhZYk70t6bmqGWgZtlggnXqTM6vub4sqwSRCMTRjWmg95x0+jtaa/Npb0hyb7ImHsmrIdZOtMK4rSRaMoEzjxhdoLqsoH/lHI2v5Etu0q5GCFcUJ1fctZlbSQcdQWtvJOS0YGaLbFTAd5fob5ZGrpCOVI3V80cQj0Pchnn+Zx7I3AYFHCLzuy50pxmSs+aVoPqUj3KFwdteTsK5eG0iVxwbaIfFSOGYhpYxgEz6NCvuG+Jl5ogLkwAYwm8pcHFLBI1+dJ0Grr5a0O8zodZmRgUpYoN0bwqqpvEeuY+A/I2ZKUH+LmIPePRRnq/hcSV7z99pWMTWrXpJAaf9up6vBHJy1aRP7wCo7T4WT61Xj4g/oK2bCHXc+VEg=
 language: python
 python:
-    - "2.7"
-    - "3.6"
+- '2.7'
+- '3.6'
 install:
-    - pip install -r requirements.txt
-    - pip install coverage
-    - python setup.py install
+- pip install -r requirements.txt
+- pip install coverage
+- python setup.py install
 before_script:
-    - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-    - chmod +x ./cc-test-reporter
-    - ./cc-test-reporter before-build
+- 'curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter'
+- chmod +x ./cc-test-reporter
+- "./cc-test-reporter before-build"
 script:
-    - coverage run setup.py test
+- coverage run setup.py test
 after_script:
-    - coverage report -m
-    - coverage xml
-    - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT --debug
+- coverage report -m
+- coverage xml
+- "./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT --debug"
+- codecov

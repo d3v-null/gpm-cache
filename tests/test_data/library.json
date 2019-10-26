@@ -1,0 +1,80 @@
+[
+  {
+    "accessControlled": false,
+    "creationTimestamp": "1472605915006990",
+    "deleted": false,
+    "id": "74e6f912-7eea-4773-be30-c4cf3e285db4",
+    "kind": "sj#playlist",
+    "lastModifiedTimestamp": "1472605915831376",
+    "name": "Fake Playlist",
+    "ownerName": "Foo Bar",
+    "ownerProfilePhotoUrl": "http://lh3.googleusercontent.com/a-/AAuE7mDFp9OrVOsU1xbfCOVOjsTF1p2kz3ui_KBZ0PdPBw",
+    "recentTimestamp": "1472605913495000",
+    "shareToken": "AMaBXymRgrH5MKsv--HVj0wb5_VPQe3bGHMAbLzpZvNCpoQvLV5O8bj_whHww5zjYcGkNacMHjZ-9YaCwsj0JOZ7q_08Tbfi-A==",
+    "tracks": [
+      {
+        "absolutePosition": "01729382256910270462",
+        "clientId": "247174cc-5aab-4db6-8258-77977a4f4e21",
+        "creationTimestamp": "1472605915375790",
+        "deleted": false,
+        "id": "485d49ee-6e26-349a-9077-30a5e32d77e5",
+        "kind": "sj#playlistEntry",
+        "lastModifiedTimestamp": "1472605915375790",
+        "playlistId": "74e6f912-7eea-4773-be30-c4cf3e285db4",
+        "source": "2",
+        "track": {
+          "album": "Some album",
+          "albumArtRef": [
+            {
+              "aspectRatio": "1",
+              "autogen": false,
+              "kind": "sj#imageRef",
+              "url": "http://lh3.googleusercontent.com/sMjcCS_f2jxD3Igpkwm4vsp4YvqIuFdxNDrEXk3-OS7OGTugOQuXP6c1mmUkquSb0yxCpnKfGA"
+            }
+          ],
+          "albumArtist": "Some Artist",
+          "albumAvailableForPurchase": false,
+          "albumId": "B5akh2g7the5vx5ak3ljxouiswq",
+          "artist": "Some Artist",
+          "artistArtRef": [
+            {
+              "aspectRatio": "2",
+              "autogen": true,
+              "kind": "sj#imageRef",
+              "url": "http://lh3.googleusercontent.com/V1Sjs7d7-vyIu3921U_q8lrWfnoqHC3bY_QjIHtLEw16_ccXH_TjZr7hazrR3JEBsYDLvkil"
+            },
+            {
+              "aspectRatio": "1",
+              "autogen": true,
+              "kind": "sj#imageRef",
+              "url": "http://lh3.googleusercontent.com/aJeUilhpw0_BzcvtRhKJePSUQOjSbJVtDJ9Pj_eP7HqK7hnv_ZMGYOegERcvbMqb8SJP4Gbw"
+            }
+          ],
+          "artistId": [
+            "Ae5iie3sictdbeotpfkttyzfone"
+          ],
+          "composer": "Some Artist",
+          "discNumber": 1,
+          "durationMillis": "211000",
+          "estimatedSize": "8448027",
+          "explicitType": "2",
+          "genre": "Folk",
+          "kind": "sj#track",
+          "lastRatingChangeTimestamp": "1472605890177000",
+          "nid": "boqgbwj6edxyk3sfhb3g6jqhju",
+          "playCount": 2,
+          "rating": "5",
+          "storeId": "Tboqgbwj6edxyk3sfhb3g6jqhju",
+          "title": "Some Track",
+          "trackAvailableForPurchase": true,
+          "trackAvailableForSubscription": true,
+          "trackNumber": 1,
+          "trackType": "7",
+          "year": 1966
+        },
+        "trackId": "Tboqgbwj6edxyk3sfhb3g6jqhju"
+      }
+    ],
+    "type": "USER_GENERATED"
+  }
+]

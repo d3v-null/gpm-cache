@@ -6,19 +6,22 @@ from __future__ import absolute_import
 
 import logging
 import os
-import sys
 import re
+import sys
 import time
 from argparse import ArgumentParser
 from pprint import pformat
 
-import requests
-
 import gmusicapi
 import mutagen
+import requests
 from gmusicapi import Mobileclient
 from mutagen.easyid3 import EasyID3
-from six import binary_type, text_type, iterbytes, u, b, unichr  # noqa: W0611
+from six import b, binary_type, iterbytes, text_type, u, unichr  # noqa: W0611
+
+# from .api_helper import ApiHelper
+from .track_info import TrackInfo
+from .sanitation_helper import to_safe_filename, to_safe_print
 
 DEBUG_LEVELS = {
     'debug': logging.DEBUG,
@@ -28,8 +31,6 @@ DEBUG_LEVELS = {
     'critical': logging.CRITICAL
 }
 
-FILENAME_KEEP_CHARS = (' ', '.', '_')
-
 
 class PlaylistNotFoundException(UserWarning):
     pass
@@ -37,63 +38,6 @@ class PlaylistNotFoundException(UserWarning):
 
 class BadLoginException(UserWarning):
     pass
-
-
-class TrackInfo(object):
-    """Helper class stores information about a track."""
-    def __init__(self, track_id, track_info):
-        track_info = track_info or {}
-        self.track_id = track_id
-        self.track_info = track_info
-
-    @property
-    def id3_meta(self):
-        """Return the id3 tags for this object."""
-
-        response = {}
-        for meta_key, info_key, mapping_fn in [
-            ('artist', 'artist', text_type),
-            ('albumartist', 'albumArtist', text_type),
-            ('title', 'title', text_type),
-            ('album', 'album', text_type),
-            ('genre', 'genre', text_type),
-            ('tracknumber', 'trackNumber', text_type),
-            ('discnumber', 'discNumber', text_type),
-            ('date', 'year', text_type),
-        ]:
-            if self.track_info.get(info_key) is not None:
-                response[meta_key] = mapping_fn(self.track_info.get(info_key))
-
-        return response
-
-    @property
-    def filing_artist(self):
-        """Return the artist under which this track should be filed."""
-        filing_artists = \
-            [
-                self.track_info.get(key) for key in
-                ['albumArtist', 'artist', 'composer']
-                if self.track_info.get(key)
-            ]
-        return filing_artists[0] if filing_artists else "Unknown Artist"
-
-    @property
-    def filing_album(self):
-        response = self.track_info.get('album') if self.track_info.get('album') else "Unkown Album"
-        # if self.track_info.get('discNumber'):
-        #     response = "%s - disc %s" % (response, self.track_info.get('discNumber'))
-        if self.track_info.get('year'):
-            response = "%s [%s]" % (response, self.track_info.get('year'))
-        return response
-
-    @property
-    def filing_title(self):
-        response = self.track_info.get('title') if self.track_info.get('title') else self.track_id
-        if self.track_info.get('trackNumber') is not None:
-            response = "%02d - %s" % (self.track_info.get('trackNumber'), response)
-            if self.track_info.get('discNumber') is not None:
-                response = "%02d:%s" % (self.track_info.get('discNumber'), response)
-        return response
 
 
 # pprint(EasyID3.valid_keys.keys())
@@ -139,24 +83,6 @@ def get_parser_args(argv=None):
     parser_args = parser.parse_args(argv)
 
     return parser_args
-
-
-def to_safe_print(thing, errors='backslashreplace'):
-    """Take a stringable object of any type, returns a safe ASCII byte str."""
-    if isinstance(thing, binary_type):
-        thing = u"".join([(unichr(c) if (c in range(0x7f)) else "\\x%02x" % (c, ))
-                          for c in iterbytes(thing)])
-        # thing = thing.decode('ascii', errors=errors)
-    elif not isinstance(thing, text_type):
-        thing = text_type(thing)
-    return thing.encode('ascii', errors=errors).decode('ascii')
-
-
-def to_safe_filename(thing):
-    """Take a stringable object and return an ASCII string safe for filenames."""
-    thing = to_safe_print(thing, errors='ignore')
-    re_keep_characters = "[%s]" % ("A-Za-z0-9" + re.escape("".join(FILENAME_KEEP_CHARS)))
-    return "".join(c for c in thing if re.match(re_keep_characters, c)).rstrip()
 
 
 def save_meta(local_filepath, track_info=None):

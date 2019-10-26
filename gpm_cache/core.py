@@ -48,9 +48,12 @@ def get_parser_args(argv=None):
                         help="The name of the GPM playlist to cache info from",
                         required=True)
     parser.add_argument('--playlist-cached',
-                        help=("The name of the GPM playlist to add cached songs to "
-                              "(providing this argument causes songs to be deletd from playlist)"),
+                        help="The name of the GPM playlist to add cached songs to.",
                         default=None)
+    parser.add_argument('--clear-playlist',
+                        help=("Clear the source playlist once all files have been saved to the "
+                              "cached playlist."),
+                        default=True)
     parser.add_argument('--sleep-time',
                         help="Time to sleep in between requests",
                         default=10,
@@ -190,6 +193,10 @@ def cache_playlist(api, parser_args):
         logging.warning("tracks that failed")
         for track in failed_tracks:
             logging.warning("-> %s %s", track.get('trackID'), track.get('track'))
+    elif parser_args.clear_playlist and parser_args.playlist_cached:
+        api.remove_entries_from_playlist([
+            entry['id'] for entry in source_playlist['tracks']
+        ])
 
 
 def main(argv=None):

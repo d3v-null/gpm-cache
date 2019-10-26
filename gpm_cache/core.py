@@ -18,7 +18,7 @@ from mutagen.easyid3 import EasyID3
 from six import b, binary_type, iterbytes, text_type, u, unichr  # noqa: W0611
 
 from .sanitation_helper import to_safe_filename, to_safe_print
-from .api_helper import ApiHelper
+from .library import Library
 from .track_info import TrackInfo
 from .exceptions import BadLoginException
 
@@ -154,16 +154,28 @@ def cache_playlist(api, parser_args):
     Cache an entire playlist from the API.
     """
 
-    target_playlist = ApiHelper.find_playlist(api, parser_args.playlist)
+    library = Library(api.get_all_user_playlist_contents())
+    source_playlist = library.find_playlist(parser_args.playlist)
+
+    cached_playlist = None
+    if parser_args.playlist_cached:
+        cached_playlist = library.find_playlist(parser_args.playlist_cached)
 
     failed_tracks = []
 
-    for track in target_playlist['tracks']:
+    for track in source_playlist['tracks']:
         track_id = track['trackId']
         track_info = track.get('track')
         try:
             filename = cache_track(api, parser_args, track_id, track_info)
-            logging.info("succesfully cacheed to %s", to_safe_print(filename))
+            logging.info("succesfully cached to %s", to_safe_print(filename))
+
+            if parser_args.playlist_cached:
+                response = api.add_songs_to_playlist(cached_playlist['id'], [track_id])
+                logging.info("added song to cached playlist %s with name %s. response: %s",
+                             repr(cached_playlist['name']),
+                             repr(cached_playlist['id']),
+                             repr(response))
         except gmusicapi.exceptions.CallFailure:
             logging.info("failed to get streaming url, "
                          "try updating your device id: "

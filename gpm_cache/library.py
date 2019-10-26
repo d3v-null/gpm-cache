@@ -6,15 +6,14 @@ from .exceptions import PlaylistNotFoundException
 from .sanitation_helper import to_safe_print
 
 
-class ApiHelper:
-    cached_library = None
+class Library:
 
-    @classmethod
-    def find_playlist(cls, api, playlist_name):
-        if not cls.cached_library:
-            cls.cached_library = api.get_all_user_playlist_contents()
+    def __init__(self, data):
+        self.data = data
 
-        for playlist in cls.cached_library:
+    def find_playlist(self, playlist_name):
+
+        for playlist in self.data:
             logging.debug('found %s %s', to_safe_print(playlist['name']),
                           to_safe_print(playlist['id']))
             if re.match(playlist_name, playlist['name'], re.I):

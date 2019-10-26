@@ -27,13 +27,15 @@ class TestMainMocked(unittest.TestCase):
 
     def test_bad_login(self):
         with \
-                patch.object(Mobileclient, 'login', return_value=None), \
+                patch.object(Mobileclient, 'perform_oauth', return_value=None), \
+                patch.object(Mobileclient, 'oauth_login', return_value=None), \
                 self.assertRaises(BadLoginException):
             main(self.dummy_argv)
 
     def test_good_login_bad_playlist_contents(self):
         with \
-                patch.object(Mobileclient, 'login', return_value=True), \
+                patch.object(Mobileclient, 'perform_oauth', return_value=None), \
+                patch.object(Mobileclient, 'oauth_login', return_value=True), \
                 patch.object(Mobileclient, 'get_all_user_playlist_contents', return_value=[]), \
                 self.assertRaises(PlaylistNotFoundException):
             main(self.dummy_argv)

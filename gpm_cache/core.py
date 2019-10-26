@@ -105,18 +105,14 @@ def get_parser_args(argv=None):
     parser = ArgumentParser(description="cache information about a playlist from Google Play Music",
                             fromfile_prefix_chars="@")
     parser.add_argument('--email', help="The Google Authentication email", required=True)
-    parser.add_argument(
-        '--pwd',
-        help="The Google Authentication password",
-    )
-    parser.add_argument(
-        '--device-id',
-        help="The Device ID used to log in (Use a GSF ID that has already been registered with GPM)",
-        required=True)
+    parser.add_argument('--pwd', help="The Google Authentication password")
+    parser.add_argument('--device-id',
+                        help=("The Device ID used to log in "
+                              "(Use a GSF ID that has already been registered with GPM)"),
+                        required=True)
     parser.add_argument('--playlist',
                         help="The name of the GPM playlist to cache info from",
                         required=True)
-
     parser.add_argument('--sleep-time',
                         help="Time to sleep in between requests",
                         default=10,
@@ -130,6 +126,15 @@ def get_parser_args(argv=None):
     parser.add_argument('--debug-level',
                         help="The level above which debug statements are printed",
                         choices=list(DEBUG_LEVELS.keys()))
+    parser.add_argument('--oauth-creds-file',
+                        help=("location to store the oauth credentials file. "
+                              "If not provided, a file will be created for you in "
+                              "[Appdir](https://pypi.org/project/appdirs/) `user_data_dir` "
+                              "by default"),
+                        default=None)
+    parser.add_argument('--oauth-browser',
+                        help=("open the oauth flow in your browser"),
+                        default=True)
 
     parser_args = parser.parse_args(argv)
 
@@ -139,10 +144,8 @@ def get_parser_args(argv=None):
 def to_safe_print(thing, errors='backslashreplace'):
     """Take a stringable object of any type, returns a safe ASCII byte str."""
     if isinstance(thing, binary_type):
-        thing = u"".join([
-            (unichr(c) if (c in range(0x7f)) else "\\x%02x" % (c,))
-            for c in iterbytes(thing)
-        ])
+        thing = u"".join([(unichr(c) if (c in range(0x7f)) else "\\x%02x" % (c, ))
+                          for c in iterbytes(thing)])
         # thing = thing.decode('ascii', errors=errors)
     elif not isinstance(thing, text_type):
         thing = text_type(thing)
@@ -264,7 +267,8 @@ def cache_playlist(api, parser_args):
             except gmusicapi.exceptions.CallFailure:
                 logging.info(
                     "failed to get streaming url, "
-                    "try updating your device id: https://github.com/simon-weber/gmusicapi/issues/590"
+                    "try updating your device id: "
+                    "https://github.com/simon-weber/gmusicapi/issues/590"
                 )
                 exit()
             except Exception as exc:
@@ -300,15 +304,23 @@ def main(argv=None):
     logging.basicConfig(**logging_args)
 
     for item, value in list(vars(parser_args).items()):
+        if item == "pwd":
+            continue
         logging.info("Parser arg: %15s = %s", item, value)
 
-    password = parser_args.pwd
-    if not password:
-        password = getpass(prompt="Enter your Google account password:")
+    if not os.path.exists(api.OAUTH_FILEPATH):
+        logging.info("performing oauth")
+
+        perform_oauth_args = {
+            'open_browser': parser_args.oauth_browser
+        }
+        if parser_args.oauth_creds_file:
+            perform_oauth_args['storage_filepath'] = parser_args.oauth_creds_file
+        api.perform_oauth(**perform_oauth_args)
 
     logging.info("logging in to api")
+    response = api.oauth_login(device_id=parser_args.device_id)
 
-    response = api.login(parser_args.email, password, parser_args.device_id)
     if response:
         logging.info("api response: %s", response)
         cache_playlist(api, parser_args)

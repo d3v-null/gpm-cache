@@ -6,11 +6,9 @@ from __future__ import absolute_import
 
 import logging
 import os
-import re
 import sys
 import time
 from argparse import ArgumentParser
-from pprint import pformat
 
 import gmusicapi
 import mutagen
@@ -19,9 +17,10 @@ from gmusicapi import Mobileclient
 from mutagen.easyid3 import EasyID3
 from six import b, binary_type, iterbytes, text_type, u, unichr  # noqa: W0611
 
-# from .api_helper import ApiHelper
-from .track_info import TrackInfo
 from .sanitation_helper import to_safe_filename, to_safe_print
+from .api_helper import ApiHelper
+from .track_info import TrackInfo
+from .exceptions import BadLoginException
 
 DEBUG_LEVELS = {
     'debug': logging.DEBUG,
@@ -30,14 +29,6 @@ DEBUG_LEVELS = {
     'error': logging.ERROR,
     'critical': logging.CRITICAL
 }
-
-
-class PlaylistNotFoundException(UserWarning):
-    pass
-
-
-class BadLoginException(UserWarning):
-    pass
 
 
 # pprint(EasyID3.valid_keys.keys())
@@ -136,8 +127,6 @@ def cache_track(api, parser_args, track_id, track_info=None):
 
     info_obj = TrackInfo(track_id, track_info)
 
-    print("TODO: add extra meta here like 'cached by gpm-cache'")
-
     cache_url = api.get_stream_url(track_id)
     logging.info("cache_url: %s", to_safe_print(cache_url))
 
@@ -165,51 +154,32 @@ def cache_playlist(api, parser_args):
     Cache an entire playlist from the API.
     """
 
-    library = api.get_all_user_playlist_contents()
+    target_playlist = ApiHelper.find_playlist(api, parser_args.playlist)
 
-    target_playlist = None
+    failed_tracks = []
 
-    for playlist in library:
-        logging.info('found %s %s', to_safe_print(playlist['name']), to_safe_print(playlist['id']))
-        if re.match(parser_args.playlist, playlist['name'], re.I):
-            logging.info("playlist matched", )
-            target_playlist = playlist
-            break
-        else:
-            logging.info("playlist (%s) did not match %s", repr(playlist['name']),
-                         repr(parser_args.playlist))
+    for track in target_playlist['tracks']:
+        track_id = track['trackId']
+        track_info = track.get('track')
+        try:
+            filename = cache_track(api, parser_args, track_id, track_info)
+            logging.info("succesfully cacheed to %s", to_safe_print(filename))
+        except gmusicapi.exceptions.CallFailure:
+            logging.info("failed to get streaming url, "
+                         "try updating your device id: "
+                         "https://github.com/simon-weber/gmusicapi/issues/590")
+            exit()
+        except Exception as exc:
+            failed_tracks.append(track)
+            logging.info("\n\n!!! failed to cache track, %s. info: %s, exception: %s", track_id,
+                         track_info, exc)
 
-    if target_playlist:
-        logging.info("found target playlist %s", pformat(target_playlist))
-
-        failed_tracks = []
-
-        for track in target_playlist['tracks']:
-            track_id = track['trackId']
-            track_info = track.get('track')
-            try:
-                filename = cache_track(api, parser_args, track_id, track_info)
-                logging.info("succesfully cacheed to %s", to_safe_print(filename))
-            except gmusicapi.exceptions.CallFailure:
-                logging.info("failed to get streaming url, "
-                             "try updating your device id: "
-                             "https://github.com/simon-weber/gmusicapi/issues/590")
-                exit()
-            except Exception as exc:
-                failed_tracks.append(track)
-                logging.info("\n\n!!! failed to cache track, %s. info: %s, exception: %s", track_id,
-                             track_info, exc)
-
-        if failed_tracks:
-            logging.warning("tracks that failed")
-            for track in failed_tracks:
-                logging.warning("-> %s %s", track.get('trackID'), track.get('track'))
-    else:
-        raise PlaylistNotFoundException("no playlist matched search string: %s",
-                                        repr(parser_args.playlist))
+    if failed_tracks:
+        logging.warning("tracks that failed")
+        for track in failed_tracks:
+            logging.warning("-> %s %s", track.get('trackID'), track.get('track'))
 
 
-#
 def main(argv=None):
     """
     Parse arguments, set up debugging and cache metadata.

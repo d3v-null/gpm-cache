@@ -90,7 +90,7 @@ def save_meta(local_filepath, track_info=None):
     meta.save()
 
 
-def get_local_filepath(parser_args, track_id, track_info=None):
+def get_local_filepath(cache_location, track_id, track_info=None):
     """
     Determine the best location to save the track on disk.
 
@@ -100,13 +100,11 @@ def get_local_filepath(parser_args, track_id, track_info=None):
     local_filepath = "%s.mp3" % to_safe_filename(track_info.filing_title)
     local_dir = os.path.expanduser(
         os.path.join(*[
-            parser_args.cache_location,
+            cache_location,
             to_safe_filename(track_info.filing_artist),
             to_safe_filename(track_info.filing_album)
         ]))
-    # local_dir = os.path.join(track_info.filing_artist, track_info.filing_album)
-    # local_dir = os.path.join(parser_args.cache_location, local_dir)
-    # local_dir = os.path.expanduser(local_dir)
+
     local_filepath = os.path.join(local_dir, local_filepath)
 
     logging.info("caching song: id %s; artist %s; album %s; title %s; path %s",
@@ -132,7 +130,7 @@ def cache_track(api, parser_args, track_id, track_info=None):
 
     req = requests.get(cache_url, stream=True)
 
-    local_filepath = get_local_filepath(parser_args, track_id, info_obj)
+    local_filepath = get_local_filepath(parser_args.cache_location, track_id, info_obj)
 
     with open(local_filepath, 'wb') as loc_file:
         for chunk in req.iter_content(chunk_size=1024):

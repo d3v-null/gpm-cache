@@ -55,8 +55,8 @@ Installation
 Install from GitHub
 
 ```sh
-pip install -r requirements.txt
-python setup.py develop
+pip install -r requirements.txt --user
+python setup.py develop --user
 ```
 
 Testing

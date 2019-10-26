@@ -20,7 +20,7 @@ from six import b, binary_type, iterbytes, text_type, u, unichr  # noqa: W0611
 from .sanitation_helper import to_safe_filename, to_safe_print
 from .library import Library
 from .track_info import TrackInfo
-from .exceptions import BadLoginException, PlaylistNotFoundException
+from .exceptions import BadLoginException
 
 DEBUG_LEVELS = {
     'debug': logging.DEBUG,
@@ -159,23 +159,23 @@ def cache_track(api, parser_args, track_id, track_info=None):
     return local_filepath
 
 
+def clear_playlist(api, playlist_info):
+    api.remove_entries_from_playlist([
+        entry['id'] for entry in playlist_info['tracks']
+    ])
+
+
 def cache_playlist(api, parser_args):
     """
     Cache an entire playlist from the API.
     """
 
-    library = Library(api.get_all_user_playlist_contents())
+    library = Library(api)
     source_playlist = library.find_playlist(parser_args.playlist)
 
     cached_playlist = None
     if parser_args.playlist_cached:
-        try:
-            cached_playlist = library.find_playlist(parser_args.playlist_cached)
-        except PlaylistNotFoundException:
-            cached_playlist = {
-                'name': parser_args.playlist_cached,
-                'id': api.create_playlist(parser_args.playlist_cached)
-            }
+        cached_playlist = library.find_or_create_playlist(parser_args.playlist_cached)
 
     failed_tracks = []
 
@@ -207,9 +207,7 @@ def cache_playlist(api, parser_args):
         for track in failed_tracks:
             logging.warning("-> %s %s", track.get('trackID'), track.get('track'))
     elif parser_args.clear_playlist and parser_args.playlist_cached:
-        api.remove_entries_from_playlist([
-            entry['id'] for entry in source_playlist['tracks']
-        ])
+        clear_playlist(api, source_playlist)
 
 
 def main(argv=None):

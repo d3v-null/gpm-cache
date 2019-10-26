@@ -6,18 +6,11 @@ https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 """
 
-
-
-# and accepts an argument to specify the text encoding
-# Python 3 only projects can skip this import
 from io import open
-# io.open is needed for projects that support Python 2.7
-# It ensures open() defaults to text mode with universal newlines,
 from os import path
-import re
 
 # Always prefer setuptools over distutils
-from setuptools import find_packages, setup
+from setuptools import setup
 
 HERE = path.abspath(path.dirname(__file__))
 PKG_NAME = 'gpm_cache'
@@ -160,7 +153,6 @@ setup(
         'dev': ['check-manifest'],
         'test': ['coverage', 'mock'],
     },
-
     setup_requires=["pytest-runner"],
     tests_require=["pytest", 'coverage', 'mock', 'pytest-cov'],
 

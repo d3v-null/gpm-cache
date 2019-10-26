@@ -10,7 +10,6 @@ import sys
 import re
 import time
 from argparse import ArgumentParser
-from getpass import getpass
 from pprint import pformat
 
 import requests
@@ -113,13 +112,14 @@ def get_parser_args(argv=None):
     parser.add_argument('--playlist',
                         help="The name of the GPM playlist to cache info from",
                         required=True)
+    parser.add_argument('--playlist-cached',
+                        help=("The name of the GPM playlist to add cached songs to "
+                              "(providing this argument causes songs to be deletd from playlist)"),
+                        default=None)
     parser.add_argument('--sleep-time',
                         help="Time to sleep in between requests",
                         default=10,
                         type=float)
-
-    # TODO: implement playlist-cached
-
     parser.add_argument('--cache-location',
                         help="The location in the filesystem to store cached information",
                         default=os.path.join(os.path.expanduser("~"), "gpm-cache"))
@@ -265,11 +265,9 @@ def cache_playlist(api, parser_args):
                 filename = cache_track(api, parser_args, track_id, track_info)
                 logging.info("succesfully cacheed to %s", to_safe_print(filename))
             except gmusicapi.exceptions.CallFailure:
-                logging.info(
-                    "failed to get streaming url, "
-                    "try updating your device id: "
-                    "https://github.com/simon-weber/gmusicapi/issues/590"
-                )
+                logging.info("failed to get streaming url, "
+                             "try updating your device id: "
+                             "https://github.com/simon-weber/gmusicapi/issues/590")
                 exit()
             except Exception as exc:
                 failed_tracks.append(track)
@@ -311,9 +309,7 @@ def main(argv=None):
     if not os.path.exists(api.OAUTH_FILEPATH):
         logging.info("performing oauth")
 
-        perform_oauth_args = {
-            'open_browser': parser_args.oauth_browser
-        }
+        perform_oauth_args = {'open_browser': parser_args.oauth_browser}
         if parser_args.oauth_creds_file:
             perform_oauth_args['storage_filepath'] = parser_args.oauth_creds_file
         api.perform_oauth(**perform_oauth_args)

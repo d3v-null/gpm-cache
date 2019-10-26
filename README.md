@@ -109,6 +109,6 @@ If the `--playlist-cached` argument is provided, then all songs which were succe
 
 ## Roadmap
 
-- [x] Ask for creds every time
 - [x] [Get 2FA working](https://github.com/derwentx/gpm-cache/issues/1)
-- [ ] [implement playlist-cached parameter](https://github.com/derwentx/gpm-cache/issues/2)
+- [x] [implement playlist-cached parameter](https://github.com/derwentx/gpm-cache/issues/2)
+- [x] [implement flat heirarchy parameter](https://github.com/derwentx/gpm-cache/issues/5)

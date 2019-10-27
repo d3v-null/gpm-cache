@@ -129,20 +129,8 @@ def get_local_filepath(cache_location, cache_heirarchy, track_info=None):
     return local_filepath
 
 
-def cache_track(api, parser_args, track_id, track_info=None):
-    """
-    Cache a single track from the API.
-    """
-
-    info_obj = TrackInfo(track_id, track_info)
-
-    cache_url = api.get_stream_url(track_id)
-    logging.info("cache_url: %s", to_safe_print(cache_url))
-
-    req = requests.get(cache_url, stream=True)
-
-    local_filepath = get_local_filepath(parser_args.cache_location, parser_args.cache_heirarchy,
-                                        info_obj)
+def write_stream_to_disk(stream_url, local_filepath):
+    req = requests.get(stream_url, stream=True)
 
     with open(local_filepath, 'wb') as loc_file:
         for chunk in req.iter_content(chunk_size=1024):
@@ -151,7 +139,28 @@ def cache_track(api, parser_args, track_id, track_info=None):
         logging.info("wrote file %s", loc_file.name)
         loc_file.flush()
 
+
+def cache_track(api, parser_args, track_id, track_info=None, cached_playlist=None):
+    """
+    Cache a single track from the API.
+    """
+
+    info_obj = TrackInfo(track_id, track_info)
+
+    local_filepath = get_local_filepath(parser_args.cache_location, parser_args.cache_heirarchy,
+                                        info_obj)
+
+    cache_url = api.get_stream_url(info_obj.track_id)
+    logging.info("cache_url: %s", to_safe_print(cache_url))
+
+    write_stream_to_disk(cache_url, info_obj)
+
     save_meta(local_filepath, info_obj)
+
+    if cached_playlist:
+        response = api.add_songs_to_playlist(cached_playlist['id'], [track_id])
+        logging.info("added song to cached playlist %s with name %s. response: %s",
+                     repr(cached_playlist['name']), repr(cached_playlist['id']), repr(response))
 
     logging.info("taking a nap")
     time.sleep(float(parser_args.sleep_time))
@@ -160,9 +169,7 @@ def cache_track(api, parser_args, track_id, track_info=None):
 
 
 def clear_playlist(api, playlist_info):
-    api.remove_entries_from_playlist([
-        entry['id'] for entry in playlist_info['tracks']
-    ])
+    api.remove_entries_from_playlist([entry['id'] for entry in playlist_info['tracks']])
 
 
 def cache_playlist(api, parser_args):
@@ -183,27 +190,20 @@ def cache_playlist(api, parser_args):
         track_id = track['trackId']
         track_info = track.get('track')
         try:
-            filename = cache_track(api, parser_args, track_id, track_info)
+            filename = cache_track(api, parser_args, track_id, track_info, cached_playlist)
             logging.info("succesfully cached to %s", to_safe_print(filename))
-
-            if parser_args.playlist_cached:
-                response = api.add_songs_to_playlist(cached_playlist['id'], [track_id])
-                logging.info("added song to cached playlist %s with name %s. response: %s",
-                             repr(cached_playlist['name']),
-                             repr(cached_playlist['id']),
-                             repr(response))
         except gmusicapi.exceptions.CallFailure:
-            logging.info("failed to get streaming url, "
-                         "try updating your device id: "
-                         "https://github.com/simon-weber/gmusicapi/issues/590")
+            logging.warning("failed to get streaming url, "
+                            "try updating your device id: "
+                            "https://github.com/simon-weber/gmusicapi/issues/590")
             exit()
         except Exception as exc:
             failed_tracks.append(track)
-            logging.info("\n\n!!! failed to cache track, %s. info: %s, exception: %s", track_id,
-                         track_info, exc)
+            logging.warning("\n\n!!! failed to cache track, %s. info: %s, exception: %s", track_id,
+                            track_info, exc)
 
     if failed_tracks:
-        logging.warning("tracks that failed")
+        logging.warning("tracks that failed: ")
         for track in failed_tracks:
             logging.warning("-> %s %s", track.get('trackID'), track.get('track'))
     elif parser_args.clear_playlist and parser_args.playlist_cached:

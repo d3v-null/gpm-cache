@@ -6,9 +6,11 @@ from __future__ import absolute_import
 
 import logging
 import os
+import shutil
 import sys
 import time
 from argparse import ArgumentParser
+from tempfile import mkstemp
 
 import gmusicapi
 import mutagen
@@ -17,10 +19,10 @@ from gmusicapi import Mobileclient
 from mutagen.easyid3 import EasyID3
 from six import b, binary_type, iterbytes, text_type, u, unichr  # noqa: W0611
 
-from .sanitation_helper import to_safe_filename, to_safe_print
+from .exceptions import BadLoginException
 from .library import Library
+from .sanitation_helper import to_safe_filename, to_safe_print
 from .track_info import TrackInfo
-from .exceptions import BadLoginException, PlaylistNotFoundException
 
 DEBUG_LEVELS = {
     'debug': logging.DEBUG,
@@ -97,6 +99,8 @@ def save_meta(local_filepath, track_info=None):
 
     meta.save()
 
+    logging.info("saved meta for %s", local_filepath)
+
 
 def get_local_filepath(cache_location, cache_heirarchy, track_info=None):
     """
@@ -123,35 +127,49 @@ def get_local_filepath(cache_location, cache_heirarchy, track_info=None):
                  to_safe_print(track_info.filing_album), to_safe_print(track_info.filing_title),
                  to_safe_print(local_filepath))
 
-    if not os.path.exists(local_dir):
-        os.makedirs(local_dir)
-
     return local_filepath
 
 
-def cache_track(api, parser_args, track_id, track_info=None):
+def write_stream_to_disk(stream_url, local_filepath, info_obj):
+    req = requests.get(stream_url, stream=True)
+
+    tmp_descriptor, tmp_filename = mkstemp(suffix='.mp3', prefix='gpm-cache')
+
+    with open(tmp_filename, 'wb') as tmp_file:
+        for chunk in req.iter_content(chunk_size=1024):
+            if chunk:  # filter out keep-alive new chunks
+                tmp_file.write(chunk)
+        logging.info("wrote file %s", tmp_file.name)
+        tmp_file.flush()
+
+    save_meta(tmp_filename, info_obj)
+
+    local_dir = os.path.dirname(local_filepath)
+    if not os.path.exists(local_dir):
+        os.makedirs(local_dir)
+
+    logging.info("moving %s to %s", repr(tmp_filename), repr(local_filepath))
+
+    shutil.move(tmp_filename, local_filepath)
+
+
+def cache_track(api, parser_args, track_info, cached_playlist=None):
     """
     Cache a single track from the API.
     """
 
-    info_obj = TrackInfo(track_id, track_info)
+    local_filepath = get_local_filepath(parser_args.cache_location, parser_args.cache_heirarchy,
+                                        track_info)
 
-    cache_url = api.get_stream_url(track_id)
+    cache_url = api.get_stream_url(track_info.track_id)
     logging.info("cache_url: %s", to_safe_print(cache_url))
 
-    req = requests.get(cache_url, stream=True)
+    write_stream_to_disk(cache_url, local_filepath, track_info)
 
-    local_filepath = get_local_filepath(parser_args.cache_location, parser_args.cache_heirarchy,
-                                        info_obj)
-
-    with open(local_filepath, 'wb') as loc_file:
-        for chunk in req.iter_content(chunk_size=1024):
-            if chunk:  # filter out keep-alive new chunks
-                loc_file.write(chunk)
-        logging.info("wrote file %s", loc_file.name)
-        loc_file.flush()
-
-    save_meta(local_filepath, info_obj)
+    if cached_playlist:
+        response = api.add_songs_to_playlist(cached_playlist['id'], [track_info.track_id])
+        logging.info("added song to cached playlist %s with name %s. response: %s",
+                     repr(cached_playlist['name']), repr(cached_playlist['id']), repr(response))
 
     logging.info("taking a nap")
     time.sleep(float(parser_args.sleep_time))
@@ -159,57 +177,47 @@ def cache_track(api, parser_args, track_id, track_info=None):
     return local_filepath
 
 
+def clear_playlist(api, playlist_info):
+    api.remove_entries_from_playlist([entry['id'] for entry in playlist_info['tracks']])
+
+
 def cache_playlist(api, parser_args):
     """
     Cache an entire playlist from the API.
     """
 
-    library = Library(api.get_all_user_playlist_contents())
+    library = Library(api)
     source_playlist = library.find_playlist(parser_args.playlist)
 
     cached_playlist = None
     if parser_args.playlist_cached:
-        try:
-            cached_playlist = library.find_playlist(parser_args.playlist_cached)
-        except PlaylistNotFoundException:
-            cached_playlist = {
-                'name': parser_args.playlist_cached,
-                'id': api.create_playlist(parser_args.playlist_cached)
-            }
+        cached_playlist = library.find_or_create_playlist(parser_args.playlist_cached)
 
     failed_tracks = []
 
     for track in source_playlist['tracks']:
-        track_id = track['trackId']
-        track_info = track.get('track')
+        track_info = TrackInfo(track['trackId'], track.get('track'))
         try:
-            filename = cache_track(api, parser_args, track_id, track_info)
+            filename = cache_track(api, parser_args, track_info, cached_playlist)
             logging.info("succesfully cached to %s", to_safe_print(filename))
-
-            if parser_args.playlist_cached:
-                response = api.add_songs_to_playlist(cached_playlist['id'], [track_id])
-                logging.info("added song to cached playlist %s with name %s. response: %s",
-                             repr(cached_playlist['name']),
-                             repr(cached_playlist['id']),
-                             repr(response))
         except gmusicapi.exceptions.CallFailure:
-            logging.info("failed to get streaming url, "
-                         "try updating your device id: "
-                         "https://github.com/simon-weber/gmusicapi/issues/590")
+            logging.warning("failed to get streaming url, "
+                            "try updating your device id: "
+                            "https://github.com/simon-weber/gmusicapi/issues/590")
             exit()
         except Exception as exc:
+            import pudb
+            pudb.set_trace()
             failed_tracks.append(track)
-            logging.info("\n\n!!! failed to cache track, %s. info: %s, exception: %s", track_id,
-                         track_info, exc)
+            logging.warning("\n\n!!! failed to cache track, %s. info: %s, exception: %s",
+                            track_info.track_id, track_info, exc)
 
     if failed_tracks:
-        logging.warning("tracks that failed")
+        logging.warning("tracks that failed: ")
         for track in failed_tracks:
             logging.warning("-> %s %s", track.get('trackID'), track.get('track'))
     elif parser_args.clear_playlist and parser_args.playlist_cached:
-        api.remove_entries_from_playlist([
-            entry['id'] for entry in source_playlist['tracks']
-        ])
+        clear_playlist(api, source_playlist)
 
 
 def main(argv=None):

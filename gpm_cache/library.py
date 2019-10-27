@@ -8,8 +8,9 @@ from .sanitation_helper import to_safe_print
 
 class Library:
 
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, api):
+        self.api = api
+        self.data = api.get_all_user_playlist_contents()
 
     def find_playlist(self, playlist_name):
 
@@ -22,3 +23,12 @@ class Library:
 
         raise PlaylistNotFoundException("no playlist matched search string: %s",
                                         repr(playlist_name))
+
+    def find_or_create_playlist(self, playlist_name):
+        try:
+            return self.find_playlist(playlist_name)
+        except PlaylistNotFoundException:
+            return {
+                'name': playlist_name,
+                'id': self.api.create_playlist(playlist_name)
+            }

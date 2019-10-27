@@ -6,9 +6,11 @@ from __future__ import absolute_import
 
 import logging
 import os
+import shutil
 import sys
 import time
 from argparse import ArgumentParser
+from tempfile import mkstemp
 
 import gmusicapi
 import mutagen
@@ -17,10 +19,10 @@ from gmusicapi import Mobileclient
 from mutagen.easyid3 import EasyID3
 from six import b, binary_type, iterbytes, text_type, u, unichr  # noqa: W0611
 
-from .sanitation_helper import to_safe_filename, to_safe_print
-from .library import Library
-from .track_info import TrackInfo
 from .exceptions import BadLoginException
+from .library import Library
+from .sanitation_helper import to_safe_filename, to_safe_print
+from .track_info import TrackInfo
 
 DEBUG_LEVELS = {
     'debug': logging.DEBUG,
@@ -97,6 +99,8 @@ def save_meta(local_filepath, track_info=None):
 
     meta.save()
 
+    logging.info("saved meta for %s", local_filepath)
+
 
 def get_local_filepath(cache_location, cache_heirarchy, track_info=None):
     """
@@ -123,21 +127,30 @@ def get_local_filepath(cache_location, cache_heirarchy, track_info=None):
                  to_safe_print(track_info.filing_album), to_safe_print(track_info.filing_title),
                  to_safe_print(local_filepath))
 
-    if not os.path.exists(local_dir):
-        os.makedirs(local_dir)
-
     return local_filepath
 
 
-def write_stream_to_disk(stream_url, local_filepath):
+def write_stream_to_disk(stream_url, local_filepath, info_obj):
     req = requests.get(stream_url, stream=True)
 
-    with open(local_filepath, 'wb') as loc_file:
+    tmp_descriptor, tmp_filename = mkstemp(suffix='.mp3', prefix='gpm-cache')
+
+    with open(tmp_filename, 'wb') as tmp_file:
         for chunk in req.iter_content(chunk_size=1024):
             if chunk:  # filter out keep-alive new chunks
-                loc_file.write(chunk)
-        logging.info("wrote file %s", loc_file.name)
-        loc_file.flush()
+                tmp_file.write(chunk)
+        logging.info("wrote file %s", tmp_file.name)
+        tmp_file.flush()
+
+    save_meta(tmp_filename, info_obj)
+
+    local_dir = os.path.dirname(local_filepath)
+    if not os.path.exists(local_dir):
+        os.makedirs(local_dir)
+
+    logging.info("moving %s to %s", repr(tmp_filename), repr(local_filepath))
+
+    shutil.move(tmp_filename, local_filepath)
 
 
 def cache_track(api, parser_args, track_id, track_info=None, cached_playlist=None):
@@ -150,12 +163,10 @@ def cache_track(api, parser_args, track_id, track_info=None, cached_playlist=Non
     local_filepath = get_local_filepath(parser_args.cache_location, parser_args.cache_heirarchy,
                                         info_obj)
 
-    cache_url = api.get_stream_url(info_obj.track_id)
+    cache_url = api.get_stream_url(track_id)
     logging.info("cache_url: %s", to_safe_print(cache_url))
 
-    write_stream_to_disk(cache_url, info_obj)
-
-    save_meta(local_filepath, info_obj)
+    write_stream_to_disk(cache_url, local_filepath, info_obj)
 
     if cached_playlist:
         response = api.add_songs_to_playlist(cached_playlist['id'], [track_id])
@@ -198,6 +209,8 @@ def cache_playlist(api, parser_args):
                             "https://github.com/simon-weber/gmusicapi/issues/590")
             exit()
         except Exception as exc:
+            import pudb
+            pudb.set_trace()
             failed_tracks.append(track)
             logging.warning("\n\n!!! failed to cache track, %s. info: %s, exception: %s", track_id,
                             track_info, exc)

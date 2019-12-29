@@ -9,6 +9,7 @@ import os
 import shutil
 import sys
 import time
+import traceback
 from argparse import ArgumentParser
 from tempfile import mkstemp
 
@@ -17,6 +18,7 @@ import mutagen
 import requests
 from gmusicapi import Mobileclient
 from mutagen.easyid3 import EasyID3
+from mutagen.id3 import ID3, APIC
 from six import b, binary_type, iterbytes, text_type, u, unichr  # noqa: W0611
 
 from .exceptions import BadLoginException
@@ -61,8 +63,11 @@ def get_parser_args(argv=None):
                         default=10,
                         type=float)
     parser.add_argument('--cache-location',
-                        help="The location in the filesystem to store cached information",
+                        help="The location to store cached tracks",
                         default=os.path.join(os.path.expanduser("~"), "gpm-cache"))
+    parser.add_argument('--art-cache-location',
+                        help="The location to store cached album art",
+                        default=os.path.join(os.path.expanduser("~"), "gpm-cache", "album-art"))
     parser.add_argument('--cache-heirarchy',
                         help="The structure in which the output files are organised",
                         choices=['artist_album', 'flat'],
@@ -86,7 +91,7 @@ def get_parser_args(argv=None):
     return parser_args
 
 
-def save_meta(local_filepath, track_info=None):
+def save_meta(local_filepath, track_info=None, album_art_path=None):
     """Save meta associated with track to the given file."""
     try:
         meta = EasyID3(local_filepath)
@@ -96,6 +101,19 @@ def save_meta(local_filepath, track_info=None):
 
     for meta_key, meta_val in track_info.id3_meta.items():
         meta[meta_key] = meta_val
+
+    meta.save()
+
+    meta = ID3(local_filepath)
+
+    # TODO: save artwork to file
+    with open(album_art_path, 'rb') as albumart:
+        meta['APIC'] = APIC(
+            encoding=3,
+            mime='image/jpeg',
+            type=3, desc=u'Cover',
+            data=albumart.read()
+        )
 
     meta.save()
 
@@ -130,20 +148,42 @@ def get_local_filepath(cache_location, cache_heirarchy, track_info=None):
     return local_filepath
 
 
-def write_stream_to_disk(stream_url, local_filepath, info_obj):
+def maybe_download_album_art(info_obj, cache_location):
+    if not os.path.exists(cache_location):
+        os.makedirs(cache_location)
+
+    try:
+        album_id = info_obj.track_info['albumId']
+    except KeyError:
+        logging.info(f"no art found for {info_obj}")
+        import pdb; pdb.set_trace()
+        return None
+    album_filename = f"{album_id}.jpg"
+    album_filepath = os.path.join(cache_location, album_filename)
+
+    if album_filename in os.listdir(cache_location):
+        return album_filepath
+
+    try:
+        art_url = info_obj.track_info['albumArtRef'][0]['url']
+    except IndexError:
+        logging.info(f"no art found for {track_info}")
+        return None
+
+    write_stream_to_disk(art_url, album_filepath)
+    return album_filepath
+
+
+def write_stream_to_disk(stream_url, filename):
     req = requests.get(stream_url, stream=True)
 
-    tmp_descriptor, tmp_filename = mkstemp(suffix='.mp3', prefix='gpm-cache')
-
-    with open(tmp_filename, 'wb') as tmp_file:
+    with open(filename, 'wb') as stream_file:
         for chunk in req.iter_content(chunk_size=1024):
             if chunk:  # filter out keep-alive new chunks
-                tmp_file.write(chunk)
-        logging.info("wrote file %s", tmp_file.name)
-        tmp_file.flush()
+                stream_file.write(chunk)
 
-    save_meta(tmp_filename, info_obj)
 
+def move_tmp_to_final(tmp_filename, local_filepath):
     local_dir = os.path.dirname(local_filepath)
     if not os.path.exists(local_dir):
         os.makedirs(local_dir)
@@ -164,7 +204,11 @@ def cache_track(api, parser_args, track_info, cached_playlist=None):
     cache_url = api.get_stream_url(track_info.track_id)
     logging.info("cache_url: %s", to_safe_print(cache_url))
 
-    write_stream_to_disk(cache_url, local_filepath, track_info)
+    tmp_descriptor, tmp_filename = mkstemp(suffix='.mp3', prefix='gpm-cache')
+    write_stream_to_disk(cache_url, tmp_filename)
+    album_art_file = maybe_download_album_art(track_info, parser_args.art_cache_location)
+    save_meta(tmp_filename, track_info, album_art_file)
+    move_tmp_to_final(tmp_filename, local_filepath)
 
     if cached_playlist:
         response = api.add_songs_to_playlist(cached_playlist['id'], [track_info.track_id])
@@ -205,12 +249,10 @@ def cache_playlist(api, parser_args):
                             "try updating your device id: "
                             "https://github.com/simon-weber/gmusicapi/issues/590")
             exit()
-        except Exception as exc:
-            import pudb
-            pudb.set_trace()
-            failed_tracks.append(track)
+        except Exception:
             logging.warning("\n\n!!! failed to cache track, %s. info: %s, exception: %s",
-                            track_info.track_id, track_info, exc)
+                            track_info.track_id, track_info, traceback.format_exc())
+            failed_tracks.append(track)
 
     if failed_tracks:
         logging.warning("tracks that failed: ")

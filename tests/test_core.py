@@ -8,9 +8,12 @@ from __future__ import print_function, unicode_literals
 import json
 import os
 import shlex
+import shutil
 import sys
 import unittest
 from tempfile import mkdtemp
+from mutagen.easyid3 import EasyID3
+from mutagen.id3 import ID3, APIC
 
 from gmusicapi import Mobileclient
 from six import MovedModule, add_move, b, u  # noqa: W0611
@@ -20,7 +23,8 @@ from . import REPO_ROOT, TEST_DATA_DIR
 try:
     PATH = sys.path
     sys.path.insert(1, REPO_ROOT)
-    from gpm_cache.core import main, get_local_filepath
+    import gpm_cache
+    from gpm_cache.core import main, get_local_filepath, maybe_download_album_art, save_meta
     from gpm_cache.track_info import TrackInfo
     from gpm_cache.exceptions import BadLoginException, PlaylistNotFoundException
 finally:
@@ -54,6 +58,35 @@ class TestCore(unittest.TestCase):
                                       track_info=self.info_obj)
         expected = self.out_dir + '/0101  Southpaw.mp3'
         self.assertEqual(response, expected)
+
+    def test_maybe_download_album_art(self):
+        # Given
+        expected = self.out_dir + "/B52ucw7kgew7axvye5vldk6rxty.jpg"
+
+        # When
+        with patch.object(gpm_cache.core, 'write_stream_to_disk'):
+            result = maybe_download_album_art(self.info_obj, self.out_dir)
+
+        # Then
+        self.assertEqual(expected, result)
+
+    def test_save_meta(self):
+        # Given
+        audio_src = os.path.join(TEST_DATA_DIR, 'file_example_MP3_700KB.mp3')
+        audio_dst = os.path.join(self.out_dir, 'test.mp3')
+        art_srt = os.path.join(TEST_DATA_DIR, 'SampleJPGImage_50kbmb.jpg')
+        shutil.copy(audio_src, audio_dst)
+
+        # When
+        save_meta(audio_dst, self.info_obj, art_srt)
+
+        # Then
+        meta = EasyID3(audio_dst)
+        for meta_key, meta_val in self.info_obj.id3_meta.items():
+            self.assertEqual(meta[meta_key][0], meta_val)
+
+        meta = ID3(audio_dst)
+        self.assertTrue(meta['APIC:Cover'])
 
 
 class TestMainMocked(unittest.TestCase):

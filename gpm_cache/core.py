@@ -239,6 +239,10 @@ def cache_playlist(api, parser_args):
     failed_tracks = []
 
     for track in source_playlist['tracks']:
+        if track['source'] == 1:
+            logging.warning(f"did not cache track, already cached {track}")
+            failed_tracks.append(track)
+            continue
         track_info = TrackInfo(track['trackId'], track.get('track'))
         try:
             filename = cache_track(api, parser_args, track_info, cached_playlist)
@@ -252,6 +256,7 @@ def cache_playlist(api, parser_args):
             logging.warning("\n\n!!! failed to cache track, %s. info: %s, exception: %s",
                             track_info.track_id, track_info, traceback.format_exc())
             failed_tracks.append(track)
+            continue
 
     if failed_tracks:
         logging.warning("tracks that failed: ")

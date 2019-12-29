@@ -156,7 +156,6 @@ def maybe_download_album_art(info_obj, cache_location):
         album_id = info_obj.track_info['albumId']
     except KeyError:
         logging.info(f"no art found for {info_obj}")
-        import pdb; pdb.set_trace()
         return None
     album_filename = f"{album_id}.jpg"
     album_filepath = os.path.join(cache_location, album_filename)

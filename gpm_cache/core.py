@@ -106,14 +106,14 @@ def save_meta(local_filepath, track_info=None, album_art_path=None):
 
     meta = ID3(local_filepath)
 
-    # TODO: save artwork to file
-    with open(album_art_path, 'rb') as albumart:
-        meta['APIC'] = APIC(
-            encoding=3,
-            mime='image/jpeg',
-            type=3, desc=u'Cover',
-            data=albumart.read()
-        )
+    if album_art_path:
+        with open(album_art_path, 'rb') as albumart:
+            meta['APIC'] = APIC(
+                encoding=3,
+                mime='image/jpeg',
+                type=3, desc=u'Cover',
+                data=albumart.read()
+            )
 
     meta.save()
 

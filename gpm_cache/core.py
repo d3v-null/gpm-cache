@@ -239,7 +239,7 @@ def cache_playlist(api, parser_args):
     failed_tracks = []
 
     for track in source_playlist['tracks']:
-        if track['source'] == 1:
+        if track['source'] == '1':
             logging.warning(f"did not cache track, already cached {track}")
             failed_tracks.append(track)
             continue

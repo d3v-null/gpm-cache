@@ -4,8 +4,10 @@ env:
   - secure: ucNHKruNbOH1Pb0VoEF7yBsiw+YL6D8o5+m1yXF+neWyAYEGxzZkNjqL72HyzOOMX1uj8AMxuHO7tAzr19CLltRuDRZK6BavC5/nc3NIp9+jGF1XGLZWVQQwvhUoQtSWyIJkHvc/KymVWZ1Q4jxASNYGDxuwjeDcRekNNAVRvF/EvS1qLxzHxUlIJVogFuGuRfLoE7KaIcD4wb1BhAchZgzOWM22lB77tIdBgdXkqK012pfsYPuJUg342YRolmVWa74d7tBBIj+sjoT9orbncg73l6V+2T2jhYcUBooooWeck+e4VuDNHhZYk70t6bmqGWgZtlggnXqTM6vub4sqwSRCMTRjWmg95x0+jtaa/Npb0hyb7ImHsmrIdZOtMK4rSRaMoEzjxhdoLqsoH/lHI2v5Etu0q5GCFcUJ1fctZlbSQcdQWtvJOS0YGaLbFTAd5fob5ZGrpCOVI3V80cQj0Pchnn+Zx7I3AYFHCLzuy50pxmSs+aVoPqUj3KFwdteTsK5eG0iVxwbaIfFSOGYhpYxgEz6NCvuG+Jl5ogLkwAYwm8pcHFLBI1+dJ0Grr5a0O8zodZmRgUpYoN0bwqqpvEeuY+A/I2ZKUH+LmIPePRRnq/hcSV7z99pWMTWrXpJAaf9up6vBHJy1aRP7wCo7T4WT61Xj4g/oK2bCHXc+VEg=
 language: python
 python:
-- '2.7'
 - '3.6'
+- '3.7'
+- '3.8'
+- 'nightly'
 install:
 - pip install -r requirements.txt
 - pip install coverage

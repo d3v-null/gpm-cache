@@ -5,7 +5,7 @@ import unittest
 from . import REPO_ROOT
 
 try:
-    PATH = sys.path
+    PATH = sys.path[:]
     sys.path.insert(1, REPO_ROOT)
     from gpm_cache.sanitation_helper import to_safe_filename, to_safe_print
 finally:

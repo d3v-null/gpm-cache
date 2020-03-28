@@ -7,7 +7,7 @@ import unittest
 from . import REPO_ROOT, TEST_DATA_DIR
 
 try:
-    PATH = sys.path
+    PATH = sys.path[:]
     sys.path.insert(1, REPO_ROOT)
     from gpm_cache.track_info import TrackInfo
 finally:

@@ -16,7 +16,7 @@ from six import MovedModule, add_move, b, u  # noqa: W0611
 from . import REPO_ROOT, TEST_DATA_DIR
 
 try:
-    PATH = sys.path
+    PATH = sys.path[:]
     sys.path.insert(1, REPO_ROOT)
     from gpm_cache.library import Library
     from gpm_cache.exceptions import PlaylistNotFoundException

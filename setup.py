@@ -140,7 +140,10 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        # TODO : This
+        'future',
+        'gmusicapi',
+        'mutagen',
+        'six',
     ],  # Optional
 
     # List additional groups of dependencies here (e.g. development
@@ -151,12 +154,8 @@ setup(
     #
     # Similar to `install_requires` above, these must be valid existing
     # projects.
-    extras_require={  # Optional
-        'dev': ['check-manifest'],
-        'test': ['coverage', 'mock'],
-    },
     setup_requires=["pytest-runner"],
-    tests_require=["pytest", 'coverage', 'mock', 'pytest-cov'],
+    tests_require=["pytest", 'coverage', 'mock', 'pytest-cov', 'codecov'],
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.

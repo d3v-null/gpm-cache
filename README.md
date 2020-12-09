@@ -1,4 +1,6 @@
-```
+# GPM Cache
+
+```txt
 
 //////
 //////////
@@ -36,12 +38,9 @@
 
 ```
 
-# gpm-cache
-
 [![Build Status](https://travis-ci.org/derwentx/gpm-cache.svg?branch=master)](https://travis-ci.org/derwentx/gpm-cache)
 [![Maintainability](https://api.codeclimate.com/v1/badges/f28cbc664d9193b330b3/maintainability)](https://codeclimate.com/github/derwentx/gpm-cache/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/f28cbc664d9193b330b3/test_coverage)](https://codeclimate.com/github/derwentx/gpm-cache/test_coverage)
-
 
 An innocuous little script that caches information about a GPM playlist using
 [gmusicapi](https://github.com/simon-weber/gmusicapi)
@@ -61,18 +60,20 @@ python setup.py develop --user
 ## Testing
 
 Test in your environment
+
 ```bash
 python setup.py test
 ```
 
 Use tox to run tests on multiple python versions
+
 ```bash
 tox
 ```
 
 ## Usage
 
-```
+```bash
 python -m gpm_cache.core \
   --email={your google email} \
   --device-id 'XXXXXXXXXXXXXXXX' \
@@ -84,7 +85,8 @@ python -m gpm_cache.core \
 
 Or, to save yourself typing these arguments multiple times, you can write a config
 file e.g. `gpm_args.txt` like this:
-```
+
+```txt
 --email
 your@email.com
 --playlist

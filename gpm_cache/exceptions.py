@@ -6,3 +6,7 @@ class PlaylistNotFoundException(UserWarning):
 
 class BadLoginException(UserWarning):
     pass
+
+
+class GetStreamURLException(UserWarning):
+    pass

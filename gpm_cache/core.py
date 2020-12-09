@@ -20,8 +20,9 @@ from gmusicapi import Mobileclient
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3, APIC
 from six import b, binary_type, iterbytes, text_type, u, unichr  # noqa: W0611
+from pprint import pformat
 
-from .exceptions import BadLoginException
+from .exceptions import BadLoginException, GetStreamURLException
 from .library import Library
 from .sanitation_helper import to_safe_filename, to_safe_print
 from .track_info import TrackInfo
@@ -166,7 +167,7 @@ def maybe_download_album_art(info_obj, cache_location):
     try:
         art_url = info_obj.track_info['albumArtRef'][0]['url']
     except IndexError:
-        logging.info(f"no art found for {track_info}")
+        logging.info(f"no art found for {info_obj.track_info}")
         return None
 
     write_stream_to_disk(art_url, album_filepath)
@@ -200,7 +201,15 @@ def cache_track(api, parser_args, track_info, cached_playlist=None):
     local_filepath = get_local_filepath(parser_args.cache_location, parser_args.cache_heirarchy,
                                         track_info)
 
-    cache_url = api.get_stream_url(track_info.track_id)
+    try:
+        cache_url = api.get_stream_url(track_info.track_id)
+    except Exception:
+        raise GetStreamURLException(
+            "Could not get stream URL. Check docco for more info "
+            "https://unofficial-google-music-api.readthedocs.io/en/"
+            "latest/reference/mobileclient.html#gmusicapi.clients.Mobileclient.get_stream_url"
+            "\n\n%s", traceback.format_exc()
+        )
     logging.info("cache_url: %s", to_safe_print(cache_url))
 
     tmp_descriptor, tmp_filename = mkstemp(suffix='.mp3', prefix='gpm-cache')
@@ -239,6 +248,7 @@ def cache_playlist(api, parser_args):
     failed_tracks = []
 
     for track in source_playlist['tracks']:
+        logging.debug(f"caching track {track}")
         if track['source'] == '1':
             logging.warning(f"did not cache track, already cached {track}")
             failed_tracks.append(track)
@@ -250,8 +260,10 @@ def cache_playlist(api, parser_args):
         except gmusicapi.exceptions.CallFailure:
             logging.warning("failed to get streaming url, "
                             "try updating your device id: "
-                            "https://github.com/simon-weber/gmusicapi/issues/590")
-            exit()
+                            "https://github.com/simon-weber/gmusicapi/issues/590"
+                            "\n%s", traceback.format_exc())
+            failed_tracks.append(track)
+            continue
         except Exception:
             logging.warning("\n\n!!! failed to cache track, %s. info: %s, exception: %s",
                             track_info.track_id, track_info, traceback.format_exc())
@@ -299,11 +311,17 @@ def main(argv=None):
     logging.info("logging in to api")
     response = api.oauth_login(device_id=parser_args.device_id)
 
-    if response:
+    try:
+        assert api.is_authenticated()
+        logging.debug("valid device IDs: %s", pformat(api.get_registered_devices()))
+        assert response
+    except AssertionError:
+        logging.warning("\n\n!!! failed to authenticate\n%s.",
+                        traceback.format_exc())
+        raise BadLoginException("Bad login. Check creds and internet")
+
         logging.info("api response: %s", response)
         cache_playlist(api, parser_args)
-    else:
-        raise BadLoginException("Bad login. Check creds and internet")
 
 
 if __name__ == '__main__':

@@ -104,6 +104,8 @@ class TestMainMocked(unittest.TestCase):
         with \
                 patch.object(Mobileclient, 'perform_oauth', return_value=None), \
                 patch.object(Mobileclient, 'oauth_login', return_value=True), \
+                patch.object(Mobileclient, 'is_authenticated', return_value=True), \
+                patch.object(Mobileclient, 'get_registered_devices', return_value=[]), \
                 patch.object(Mobileclient, 'get_all_user_playlist_contents', return_value=[]), \
                 self.assertRaises(PlaylistNotFoundException):
             main(self.dummy_argv)

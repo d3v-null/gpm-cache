@@ -102,3 +102,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+gpm_args.txt
+gpm_args_test.txt
+gpm_args.txt.bak

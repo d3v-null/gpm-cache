@@ -7,5 +7,5 @@ mock
 mutagen
 pytest-cov
 pytest==3.6.3
-setuptools==39.0.1
+setuptools==65.5.1
 six==1.11.0
